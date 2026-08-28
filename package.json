@@ -1,7 +1,7 @@
 {
   "name": "promethee-mcp",
   "version": "0.1.0",
-  "description": "Git+npx Promethee MCP with local browser sign-in and bounded task/project tools.",
+  "description": "GitHub Release+npx Promethee MCP with local browser sign-in and bounded task/project tools.",
   "private": true,
   "type": "module",
   "bin": {

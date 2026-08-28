@@ -1,14 +1,18 @@
 ---
 id: ADR-0008
-status: accepted
+status: amended
 date: 2026-08-28
 deciders:
   - repository owner
 consulted: []
 informed: []
+amended_by:
+  - ADR-0009
 ---
 
 # ADR-0008: Use Git+npx stdio onboarding with a loopback login
+
+The stdio, same-process login, and explicit client-configuration decisions remain accepted. ADR-0009 replaces only the public distribution reference: `v0.1.0` installs from the immutable GitHub Release archive instead of asking npm `10.9.2` to package a Git checkout.
 
 ## Context and problem
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-The executable foundation, five-tool Tasks/Projects slice, Git+npx local stdio onboarding, synthetic HTTP default, configured Supabase CLI mode, fixed five-RPC adapter, passwordless login, and OAuth consent surface are implemented. Backend evidence uses signed synthetic tokens and mocked HTTP; the packaged login has fresh browser rendering/keyboard evidence, and the same-process pairing path uses a mocked upstream. Publisher agreement, RPC/RLS deployment, custom permission enforcement, staging validation, clean Git installation, and deployed self-hosting evidence remain blocked.
+The executable foundation, five-tool Tasks/Projects slice, GitHub Release+npx local stdio onboarding, synthetic HTTP default, configured Supabase CLI mode, fixed five-RPC adapter, passwordless login, and OAuth consent surface are implemented. Backend evidence uses signed synthetic tokens and mocked HTTP; the packaged login has fresh browser rendering/keyboard evidence, and the same-process pairing path uses a mocked upstream. Publisher agreement, RPC/RLS deployment, custom permission enforcement, staging validation, public release-URL readback, and deployed self-hosting evidence remain blocked until the release is published.
 
 The safe implementation may progress against synthetic identities and fixtures. It must not progress to Promethee staging or production without the approvals and contracts below.
 
@@ -56,7 +56,7 @@ Implemented:
 - TypeScript build, typecheck, test, and aggregate check commands;
 - synthetic tests and loopback runtime.
 - dependency-free operator CLI with TTY client onboarding, local stdio personal mode, `serve`, offline `doctor`, human/JSON output, deterministic port precedence, stable usage diagnostics, and signal-driven shutdown;
-- Git+npx installation plans for Codex, Claude Code, and generic MCP JSON with explicit confirmation before client mutation;
+- GitHub Release+npx installation plans for Codex, Claude Code, and generic MCP JSON with explicit confirmation before client mutation;
 - same-process loopback login hosting plus `promethee_connection_status` for LLM-safe URL handoff.
 
 Remaining before a release candidate:
@@ -187,7 +187,7 @@ Required production evidence is defined in [SPEC-0002](../../specs/0002-bounded-
 
 Implemented artifacts:
 
-- root Git-installable npm package metadata with `prometheemcp` bin;
+- root release-installable npm package metadata with `prometheemcp` bin;
 - compiled local login artifact included in package inventory;
 - non-root multi-stage container and private Compose network;
 - Caddy TLS/static edge candidate;
@@ -203,7 +203,7 @@ Required external evidence:
 - clean install, upgrade, rollback, revocation, and dependency-failure exercises;
 - SBOM, provenance, secret scanning, and vulnerability review.
 
-The package dry-run proves the CLI and login assets are present, but no reviewed Git ref, npm package, image, tag, or deployment has been produced. Clean Git+npx installation, container build, Caddy/TLS, key rotation, rollback, and Windows execution remain unverified.
+The package dry-run and local release-archive probe prove the CLI and login assets are present. Public release-URL readback, Caddy/TLS deployment, key rotation, rollback, and Windows execution remain unverified; the CI container builds are verified separately.
 
 ## Deferred capabilities
 

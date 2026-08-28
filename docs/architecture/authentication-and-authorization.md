@@ -18,7 +18,7 @@ An MCP client should receive a token for the MCP resource only after the user au
 
 ### Local stdio onboarding
 
-1. The MCP client launches `prometheemcp --stdio` through a reviewed Git+npx package reference.
+1. The MCP client launches `prometheemcp --stdio` through the reviewed GitHub Release tarball.
 2. The process starts JSON-RPC on stdio and a bounded HTTP login surface on `127.0.0.1`.
 3. The client calls `promethee_connection_status`; the MCP returns only the local login URL.
 4. The user chooses `7 days` or `Never`, enters their email, and verifies the six-digit code in that browser page.

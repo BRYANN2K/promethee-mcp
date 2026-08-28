@@ -1,18 +1,18 @@
-# SPEC-0003: Git+npx local MCP onboarding
+# SPEC-0003: GitHub Release+npx local MCP onboarding
 
 ## Status
 
-Implemented and verified with synthetic browser pairing and mocked Promethee upstream responses. `v0.1.0` is the first reviewed public Git distribution ref; no npm registry artifact is published.
+Implemented and verified with synthetic browser pairing and mocked Promethee upstream responses. `v0.1.0` is the first reviewed public GitHub Release archive; no npm registry artifact is published.
 
 ## Outcome
 
-A user or AI assistant can configure Promethee MCP from a reviewed Git ref, receive a local browser login URL from the running MCP, complete the passwordless flow without sharing the code with the model, and use the bounded tools without restarting that MCP process.
+A user or AI assistant can configure Promethee MCP from a reviewed GitHub Release archive, receive a local browser login URL from the running MCP, complete the passwordless flow without sharing the code with the model, and use the bounded tools without restarting that MCP process.
 
 ## Functional requirements
 
 ### Package launch
 
-- FR-301: The installation reference is a bounded `github:<owner>/<repository>#<ref>` package spec.
+- FR-301: The installation reference is a bounded HTTPS GitHub Release `.tgz` package URL.
 - FR-302: MCP client configurations launch `npx -y --package=<package-spec> prometheeemcp --stdio` as an executable plus argument array, never through a shell command string.
 - FR-303: Documentation recommends a reviewed tag or commit SHA for stable installation.
 - FR-304: The package contains the compiled CLI and compiled login shell required by the stdio process.
@@ -49,7 +49,7 @@ A user or AI assistant can configure Promethee MCP from a reviewed Git ref, rece
 - SR-304: Static responses set a restrictive CSP, `nosniff`, frame denial, same-origin opener policy, and no-referrer policy.
 - SR-305: Connection mutation routes require the exact same loopback origin.
 - SR-306: No local composition reads Promethee desktop credentials, cookies, SQLite, or private IPC.
-- SR-307: The Git ref is part of the trust boundary because npm lifecycle scripts execute during Git installation.
+- SR-307: The release archive and its checksum are part of the trust boundary; installation must not rebuild a mutable Git checkout.
 
 ## Client onboarding contracts
 
@@ -82,7 +82,7 @@ claude mcp add --scope user promethee -- npx -y --package=<git-ref> prometheeemc
 
 | Condition | Required behavior |
 | --- | --- |
-| Invalid Git package reference | Exit with usage/configuration failure before spawning a client command |
+| Invalid GitHub Release package URL | Exit with usage/configuration failure before spawning a client command |
 | Client CLI unavailable | Report automatic configuration failure and preserve the printed manual command |
 | User declines confirmation | Exit successfully without mutation |
 | Login port unavailable | Try only the bounded implicit range or fail the explicit port |

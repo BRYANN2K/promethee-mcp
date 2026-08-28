@@ -11,4 +11,5 @@ Record consequential decisions with status, context, options, outcome, consequen
 | [ADR-0005](0005-add-bounded-create-tools-through-publisher-rpcs.md) | Accepted | Add bounded task/project creation through fixed publisher-owned RPCs. |
 | [ADR-0006](0006-add-a-loopback-personal-session-mode.md) | Accepted | Add an explicit loopback personal-session mode using fixed user-scoped PostgREST operations. |
 | [ADR-0007](0007-persist-a-single-user-personal-session-behind-a-trusted-edge.md) | Accepted | Persist one encrypted personal session for at most seven days behind a trusted single-user edge. |
-| [ADR-0008](0008-use-git-npx-stdio-onboarding-with-a-loopback-login.md) | Accepted | Use Git+npx stdio onboarding with a same-process loopback login. |
+| [ADR-0008](0008-use-git-npx-stdio-onboarding-with-a-loopback-login.md) | Amended | Use stdio onboarding with a same-process loopback login; ADR-0009 replaces the Git package reference. |
+| [ADR-0009](0009-distribute-the-cli-as-a-github-release-tarball.md) | Accepted | Install the CLI from the immutable GitHub Release tarball through npx. |

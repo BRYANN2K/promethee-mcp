@@ -44,7 +44,8 @@ These pages contain both implemented synthetic boundaries and proposed productio
 - [ADR-0005: Add bounded create tools through publisher-owned RPCs](adr/0005-add-bounded-create-tools-through-publisher-rpcs.md)
 - [ADR-0006: Add a loopback personal-session mode](adr/0006-add-a-loopback-personal-session-mode.md)
 - [ADR-0007: Persist a single-user personal session behind a trusted edge](adr/0007-persist-a-single-user-personal-session-behind-a-trusted-edge.md)
-- [ADR-0008: Use Git+npx stdio onboarding with a loopback login](adr/0008-use-git-npx-stdio-onboarding-with-a-loopback-login.md)
+- [ADR-0008: Use stdio onboarding with a loopback login](adr/0008-use-git-npx-stdio-onboarding-with-a-loopback-login.md)
+- [ADR-0009: Distribute the CLI as a GitHub Release tarball](adr/0009-distribute-the-cli-as-a-github-release-tarball.md)
 
 ADRs 0001–0003 remain **Proposed** because they require Promethee decisions. ADRs 0004–0008 are **Accepted** by the repository owner for this repository's implementation boundaries; they do not accept any Promethee-owned integration decision.
 
@@ -68,7 +69,7 @@ The public `v0.1.0` GitHub source release contains the validated CLI, browser au
 - [Promethee integration request](handover/promethee-integration-request.md)
 - [Project contract](../PROJECT.md)
 - [Product specification](../specs/0001-read-only-mcp.md)
-- [Local Git+npx onboarding specification](../specs/0003-git-npx-local-onboarding.md)
+- [Local GitHub Release+npx onboarding specification](../specs/0003-git-npx-local-onboarding.md)
 
 ## Maintenance
 

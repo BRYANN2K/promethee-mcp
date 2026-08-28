@@ -16,13 +16,15 @@ export interface InteractiveOnboardingOptions {
     readonly stderr?: NodeJS.WritableStream;
 }
 
-const PACKAGE_SPEC_PATTERN = /^(?:github:)?[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+(?:#[A-Za-z0-9._/-]+)?$/u;
+const PACKAGE_SPEC_PATTERN = /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/releases\/download\/[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.tgz$/u;
+
+export const DEFAULT_PACKAGE_SPEC = 'https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz';
 
 function validatePackageSpec(value: string): string {
     if (value.length > 512 || !PACKAGE_SPEC_PATTERN.test(value)) {
-        throw new TypeError('The Git package reference is invalid');
+        throw new TypeError('The GitHub Release package URL is invalid');
     }
-    return value.startsWith('github:') ? value : `github:${value}`;
+    return value;
 }
 
 function npxArgs(packageSpec: string): string[] {

@@ -21,7 +21,7 @@ import {
     PersonalCliConfigurationError,
     type PersonalProductionConfiguration
 } from './personal-config.js';
-import { runInteractiveOnboarding } from './onboarding.js';
+import { DEFAULT_PACKAGE_SPEC, runInteractiveOnboarding } from './onboarding.js';
 
 export const CLI_VERSION = '0.1.0';
 export const SYNTHETIC_HOST = '127.0.0.1';
@@ -290,7 +290,7 @@ export async function runCli(
         }
         if (parsed.kind === 'default' && io.stdin.isTTY === true && io.stdout.isTTY === true) {
             return await runInteractiveOnboarding({
-                packageSpec: environment['PROMETHEE_MCP_PACKAGE_SPEC'] ?? 'github:BRYANN2K/promethee-mcp#main',
+                packageSpec: environment['PROMETHEE_MCP_PACKAGE_SPEC'] ?? DEFAULT_PACKAGE_SPEC,
                 stdin: io.stdin,
                 stdout: io.stdout,
                 stderr: io.stderr

@@ -9,8 +9,8 @@ The local MCP starts through `npx`, hosts its own passwordless sign-in page on `
 You can let your LLM configure the MCP. Send it this instruction:
 
 ```text
-Install Promethee MCP as a user-scoped stdio server. Use npx with the reviewed Git package
-github:BRYANN2K/promethee-mcp#v0.1.0 and the prometheeemcp --stdio executable.
+Install Promethee MCP as a user-scoped stdio server. Use npx with the reviewed GitHub Release archive
+https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz and the prometheeemcp --stdio executable.
 Reconnect the MCP, call promethee_connection_status, and give me its login URL.
 Never ask me to paste the email code or tokens into the conversation.
 ```
@@ -18,7 +18,7 @@ Never ask me to paste the email code or tokens into the conversation.
 Or run the onboarding yourself:
 
 ```bash
-npx -y --package=github:BRYANN2K/promethee-mcp#v0.1.0 prometheeemcp
+npx -y --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz prometheeemcp
 ```
 
 The terminal lets you configure Codex, Claude Code, or copy a generic MCP JSON block. It prints the exact command first and changes a client configuration only after confirmation.
@@ -28,7 +28,7 @@ The terminal lets you configure Codex, Claude Code, or copy a generic MCP JSON b
 ```bash
 codex mcp add promethee -- \
   npx -y \
-  --package=github:BRYANN2K/promethee-mcp#v0.1.0 \
+  --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz \
   prometheeemcp --stdio
 ```
 
@@ -37,7 +37,7 @@ codex mcp add promethee -- \
 ```bash
 claude mcp add --scope user promethee -- \
   npx -y \
-  --package=github:BRYANN2K/promethee-mcp#v0.1.0 \
+  --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz \
   prometheeemcp --stdio
 ```
 
@@ -50,7 +50,7 @@ claude mcp add --scope user promethee -- \
       "command": "npx",
       "args": [
         "-y",
-        "--package=github:BRYANN2K/promethee-mcp#v0.1.0",
+        "--package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz",
         "prometheemcp",
         "--stdio"
       ]
@@ -61,7 +61,7 @@ claude mcp add --scope user promethee -- \
 
 After the client starts the server, ask it to connect Promethee. The MCP calls `promethee_connection_status` and returns a local URL such as `http://127.0.0.1:3210/login`. Choose `7 days` or `Never`, enter your email, and verify the six-digit code in that browser page. The running MCP detects the connection immediately; no reinstall is required.
 
-The commands above pin the reviewed `v0.1.0` tag. Do not replace it with `#main` in a persistent installation.
+The commands above pin the reviewed `v0.1.0` release archive. This avoids rebuilding a mutable Git checkout during installation.
 
 ### Hermes / VPS handoff
 

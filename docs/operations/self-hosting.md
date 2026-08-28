@@ -2,7 +2,7 @@
 
 ## Status
 
-The public `v0.1.0` source release has a tested Git+npx local stdio composition, a loopback personal HTTP composition, a validated publisher-RPC Supabase composition, a separately built passwordless web package, and a checked-in single-user Docker Compose/Caddy deployment candidate. It is not yet a verified VPS deployment: the release has not been exercised on a clean host, key rotation and rollback are unproven, and live Promethee compatibility remains unofficial and version-sensitive.
+The public `v0.1.0` source release has a tested GitHub Release+npx local stdio composition, a loopback personal HTTP composition, a validated publisher-RPC Supabase composition, a separately built passwordless web package, and a checked-in single-user Docker Compose/Caddy deployment candidate. It is not yet a verified VPS deployment: the release has not been exercised on a clean host, key rotation and rollback are unproven, and live Promethee compatibility remains unofficial and version-sensitive.
 
 The Node process binds to loopback by default. Only the complete personal production environment may select `0.0.0.0`, and only on the private Compose network behind the checked-in HTTPS edge. Never publish port `3210` directly.
 
@@ -43,12 +43,12 @@ Every bearer token is rejected by default. There is no development bypass, share
 
 Synthetic mode accepts no Promethee/Supabase origin, key, service-role credential, or arbitrary bind host. Its only data source is the in-process fixture adapter.
 
-## Local Git+npx onboarding
+## Local GitHub Release+npx onboarding
 
-For a local MCP client, prefer a reviewed tag or commit SHA:
+For a local MCP client, use the reviewed release archive:
 
 ```bash
-npx -y --package=github:BRYANN2K/promethee-mcp#v0.1.0 prometheeemcp
+npx -y --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz prometheeemcp
 ```
 
 On a human terminal, this prints a Codex/Claude Code/generic configuration choice and requires confirmation before running a client-specific add command. When an MCP client launches the same executable with piped stdio, zero arguments start JSON-RPC directly; `prometheemcp --stdio` is the explicit form.
@@ -57,9 +57,9 @@ The stdio process also serves `/login` and the bounded connection bridge on `127
 
 Local state is stored under the platform user configuration directory (`~/Library/Application Support/prometheemcp` on macOS, `%APPDATA%\\prometheemcp` on Windows, and `$XDG_CONFIG_HOME/prometheemcp` or `~/.config/prometheemcp` on Linux). `PROMETHEE_MCP_CONFIG_DIR` may override this with an absolute path. The seven-day encrypted envelope and its local key are bounded and permission-restricted; `Never` stores only the non-secret preference. This protects accidental file disclosure but not compromise of the operating-system user.
 
-Git installation executes package lifecycle code from the selected ref. Review and pin the ref before relying on this path; `v0.1.0` is the first public release and `#main` is appropriate only for development.
+The release archive is immutable by convention and has been exercised directly through `npx`. Verify the release checksum before introducing it into a managed environment. Installing from a Git ref is not the supported `v0.1.0` path because npm `10.9.2` fails its Git packaging step before this package starts.
 
-The reviewed Git ref must contain a configured `web/dist` artifact. Frontend `npm run check` uses a synthetic public configuration and writes only to ignored `.tmp/web-check-dist`; it cannot overwrite the packaged login. Frontend `npm run build` refuses an unconfigured release build so a successful source check cannot silently replace the usable login with the configuration-blocked state.
+The reviewed release archive contains the configured `web/dist` artifact. Frontend `npm run check` uses a synthetic public configuration and writes only to ignored `.tmp/web-check-dist`; it cannot overwrite the packaged login. Frontend `npm run build` refuses an unconfigured release build so a successful source check cannot silently replace the usable login with the configuration-blocked state.
 
 ## Personal loopback mode
 

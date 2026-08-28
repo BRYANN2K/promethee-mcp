@@ -8,7 +8,7 @@ import { Client } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { InMemoryTransport } from '@modelcontextprotocol/server';
 
-import { createClientInstallPlan } from '../src/cli/onboarding.js';
+import { createClientInstallPlan, DEFAULT_PACKAGE_SPEC } from '../src/cli/onboarding.js';
 import { createStaticWebRoute } from '../src/http/static-web.js';
 import type { PrometheeMcpApplication } from '../src/mcp/application.js';
 import { createPrometheeMcpServer } from '../src/mcp/create-server.js';
@@ -40,7 +40,7 @@ function childEnvironment(configDirectory: string): Record<string, string> {
 }
 
 test('client install plans use npx as the launcher and never put credentials in argv', () => {
-  const packageSpec = 'github:BRYANN2K/promethee-mcp#v0.1.0';
+  const packageSpec = DEFAULT_PACKAGE_SPEC;
   const codex = createClientInstallPlan('codex', packageSpec);
   assert.deepEqual(codex, {
     client: 'codex',
@@ -77,6 +77,11 @@ test('client install plans use npx as the launcher and never put credentials in 
     ],
   });
   assert.doesNotMatch(JSON.stringify([codex, claude]), /token|password|secret/iu);
+
+  assert.throws(
+    () => createClientInstallPlan('codex', 'https://example.test/promethee-mcp.tgz'),
+    /GitHub Release package URL is invalid/u,
+  );
 });
 
 test('the static login route is bounded to approved files and sends browser security headers', async () => {

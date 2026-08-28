@@ -57,7 +57,7 @@ It does not assess Promethee's internal infrastructure, the MCP client implement
 | Cross-tenant cache key | Data leak through cache | No first-release content cache; subject/scope-bound keys if added | Cache isolation tests |
 | Sensitive logging | Persistent privacy breach | Structured allowlist logs; header/body redaction | Log capture tests |
 | Supply-chain compromise | Token/data theft | Lock dependencies; provenance review; minimal image; update policy | SBOM and reproducible build evidence |
-| Unreviewed Git+npx ref | Lifecycle-code execution under the user account | Pin a reviewed tag/SHA; print exact client command; no hidden shell execution | clean install and package-provenance exercise |
+| Unreviewed release archive | Package-code execution under the user account | Pin the versioned GitHub asset URL and checksum; print exact client command; no hidden shell execution | clean install and package-provenance exercise |
 | Hostile local page pairs a session | Account-token capture or wrong-process pairing | loopback-only bind; exact Host/Origin; same-origin mutation routes; no token in URL | browser/route origin tests |
 | LLM requests the OTP or token | Credential disclosure into conversation history | status tool returns URL only; server instructions prohibit code/token requests; no credential tool input | tool schema/instruction tests |
 | Self-hosting misconfiguration | Public admin surfaces or weak TLS | secure defaults; startup validation; reverse-proxy guidance | deployment scan and runbook exercise |

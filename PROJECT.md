@@ -33,7 +33,7 @@ The zero-argument executable is now a local onboarding entry point: it presents 
 - a Supabase adapter limited to three fixed read RPCs and two fixed create RPCs;
 - a Supabase composition factory plus CLI configuration reader that joins OAuth verification, MCP authorization, and the fixed RPC adapter without widening the loopback bind;
 - an explicit personal composition that validates a browser-authenticated user session, keeps it in memory on loopback, or stores one AES-256-GCM-encrypted session for at most seven days in the fully configured single-user deployment, and exposes only fixed `tasks`/`task_projects` PostgREST reads and creates under RLS;
-- a dependency-free operator CLI with Git+npx client onboarding, stdio personal mode, synthetic and explicitly configured Supabase HTTP modes, offline `doctor`, stable exit codes, and JSON diagnostics;
+- a dependency-free operator CLI with GitHub Release+npx client onboarding, stdio personal mode, synthetic and explicitly configured Supabase HTTP modes, offline `doctor`, stable exit codes, and JSON diagnostics;
 - a separately built Vite browser package whose compiled `/login` shell can be served by the local stdio process, chooses retention, performs the real Promethee passwordless email-code flow, and pairs the verified personal session, while `/oauth/consent` separately reviews and submits publisher OAuth decisions;
 - a connection-status MCP tool that gives an LLM only the loopback login URL before pairing and never exposes an email code or token;
 - a loopback-only entry point whose default authenticator denies every token.

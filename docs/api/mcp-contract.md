@@ -6,7 +6,7 @@
 
 ## Transport and authorization
 
-### Local Git+npx composition
+### Local GitHub Release+npx composition
 
 - Transport: MCP stdio launched as `npx -y --package=<reviewed-git-ref> prometheeemcp --stdio`.
 - Browser bridge: an exact-origin login surface on `http://127.0.0.1:<bounded-port>/login` owned by the same process.

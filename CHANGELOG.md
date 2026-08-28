@@ -4,7 +4,7 @@
 
 First public source release of the unofficial Promethee MCP.
 
-- Git+npx onboarding for Codex, Claude Code, and generic stdio MCP clients.
+- GitHub Release+npx onboarding for Codex, Claude Code, and generic stdio MCP clients.
 - Unified browser sign-in with passwordless email verification and `7 days` or `Never` retention.
 - Bounded task and project reads plus create-only task and project tools.
 - Encrypted single-user session restoration with a fixed seven-day maximum.

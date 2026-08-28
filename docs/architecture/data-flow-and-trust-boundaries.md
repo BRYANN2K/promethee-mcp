@@ -38,7 +38,7 @@ The checked-in VPS candidate terminates TLS and operator browser authentication 
 
 ### Boundary 8: local stdio process and loopback browser
 
-An MCP client launches the local process over stdio. JSON-RPC is the only stdout protocol. The same process serves a bounded static login shell and connection bridge on `127.0.0.1`; it never binds the onboarding surface to a LAN or public interface. Exact Host and Origin checks protect connection mutations. The status tool may disclose only the loopback login URL and connection boolean. Git+npx and the selected Git ref are supply-chain boundaries because npm installs dependencies and runs the package preparation lifecycle.
+An MCP client launches the local process over stdio. JSON-RPC is the only stdout protocol. The same process serves a bounded static login shell and connection bridge on `127.0.0.1`; it never binds the onboarding surface to a LAN or public interface. Exact Host and Origin checks protect connection mutations. The status tool may disclose only the loopback login URL and connection boolean. The GitHub Release archive, checksum, `npx`, and installed dependency lock are supply-chain boundaries; the supported path executes the reviewed archive instead of rebuilding a Git checkout.
 
 ## Read flow
 

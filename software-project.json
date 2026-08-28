@@ -18,12 +18,12 @@
   ],
   "implementation": {
     "mode": "synthetic-default",
-    "cli": "implemented-git-npx-onboarding-local-stdio-synthetic-personal-and-configured-supabase",
+    "cli": "implemented-github-release-npx-onboarding-local-stdio-synthetic-personal-and-configured-supabase",
     "production_network": "personal-single-user-trusted-edge-plus-configurable-publisher-mode",
     "promethee_adapter": "implemented-fixed-five-rpc-plus-personal-fixed-postgrest",
     "supabase_oauth_verifier": "implemented-configurable-not-live-verified",
     "browser_login": "implemented-unified-retention-passwordless-otp-personal-pairing-served-on-local-loopback-plus-separate-oauth-consent",
-    "local_onboarding": "implemented-git-npx-client-configuration-and-same-process-stdio-browser-pairing",
+    "local_onboarding": "implemented-github-release-npx-client-configuration-and-same-process-stdio-browser-pairing",
     "accepted_create_contract": "implemented-not-live-verified",
     "tools": [
       "promethee_connection_status",
