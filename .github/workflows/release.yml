@@ -58,9 +58,9 @@ jobs:
         run: |
           mkdir release
           npm pack --ignore-scripts --pack-destination release
-          TARBALL="release/promethee-mcp-${GITHUB_REF_NAME#v}.tgz"
-          test -f "$TARBALL"
-          sha256sum "$TARBALL" > "$TARBALL.sha256"
+          TARBALL="promethee-mcp-${GITHUB_REF_NAME#v}.tgz"
+          test -f "release/$TARBALL"
+          (cd release && sha256sum "$TARBALL" > "$TARBALL.sha256")
 
       - name: Publish GitHub release
         env:
