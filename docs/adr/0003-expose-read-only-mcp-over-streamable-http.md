@@ -97,4 +97,5 @@ Implement the smallest read-only tools first, then add reporting and optional st
 
 - Depends on: [ADR-0001](0001-use-promethee-supabase-as-system-of-record.md)
 - Depends on: [ADR-0002](0002-require-independent-user-scoped-authentication.md)
+- Amended by: [ADR-0005](0005-add-bounded-create-tools-through-publisher-rpcs.md)
 - Evidence: [MCP transport specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)

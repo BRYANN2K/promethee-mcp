@@ -2,13 +2,13 @@
 
 ## Purpose
 
-Promethee MCP would let an authenticated user query a constrained view of their Promethee work data from a compatible AI client without installing or controlling the Promethee desktop application.
+Promethee MCP lets an authenticated user expose a constrained task/project workspace to a compatible AI client without installing or controlling the Promethee desktop application. The implemented contract includes bounded reads and create-only task/project mutations.
 
 This page explains the proposed component boundaries. It does not prove that Promethee currently permits the integration.
 
 ## System context
 
-The proposed request path has five roles:
+The system has five roles:
 
 1. **Resource owner**: the Promethee user who approves access.
 2. **MCP client**: an AI application acting on the user's behalf.
@@ -16,16 +16,27 @@ The proposed request path has five roles:
 4. **Promethee MCP server**: the protected resource server hosted by the operator.
 5. **Promethee Supabase backend**: the proposed system of record and policy enforcement point.
 
-The normal flow is:
+The remote publisher-OAuth flow is:
 
 1. The MCP client discovers the protected resource metadata exposed by the MCP server.
 2. The user is redirected to a browser-based authorization flow.
 3. The authorization service authenticates the user without reading the desktop app's session.
 4. The user approves explicit MCP scopes.
 5. The client receives an access token restricted to the MCP resource.
-6. The MCP server validates the token, maps the tool to an allowlisted backend operation, and calls a publisher-approved read-only view or RPC.
+6. The MCP server validates the token, maps the tool to one of five allowlisted RPCs, and forwards the verified user token only inside the request-scoped adapter.
 7. Supabase evaluates the request using the authenticated user's identity and RLS policies.
 8. The MCP server validates and minimizes the response before returning it to the client.
+
+The implemented local personal flow is:
+
+1. A user or AI assistant configures the MCP client to launch `npx -y --package=<reviewed-git-ref> prometheeemcp --stdio`.
+2. The process starts MCP JSON-RPC on stdio and a same-process login surface on `127.0.0.1`.
+3. `promethee_connection_status` returns the loopback URL without identity, code, or token material.
+4. The user completes the passwordless email-code flow in the browser and selects seven-day or `Never` retention.
+5. The server verifies the user session and resolves a fixed user-scoped adapter for each later tool call.
+6. Promethee RLS remains authoritative; tool inputs cannot choose an origin, table, column, operation name, or user ID.
+
+This local flow is implemented and mocked end to end, but remains unofficial and version-sensitive. It does not implement publisher OAuth consent or claim Promethee approval.
 
 ## Observed Promethee foundation
 
@@ -45,7 +56,7 @@ The same analysis did **not** establish the server schema, active grants, RLS po
 
 Responsibilities:
 
-- implement MCP Streamable HTTP;
+- implement MCP stdio for local clients and Streamable HTTP for remote/operator compositions;
 - expose protected resource metadata;
 - validate issuer, audience/resource, expiry, scopes, and token signature;
 - map each MCP operation to one allowlisted backend call;
@@ -59,7 +70,7 @@ Non-responsibilities:
 - no Promethee desktop discovery or IPC;
 - no local SQLite access;
 - no user impersonation through a service-role credential;
-- no mutation of Promethee data in the first release.
+- no update, completion, archive, delete, bulk, session, or timer mutation; only the two bounded create tools are present.
 
 ### Browser login and consent UI
 
@@ -69,21 +80,24 @@ Responsibilities:
 - authenticate the user through the approved Promethee identity path;
 - show requested scopes in plain language;
 - approve or deny the authorization request;
-- provide grant and device revocation.
+- rely on the authorization provider for grant/session revocation.
 
 The UI is external to the Promethee desktop app, but it must not imply publisher endorsement until branding and ownership are approved.
 
+For local stdio, the separately built static login artifact is served by the MCP process on the same loopback origin as its connection bridge. For VPS use, the web artifact remains behind the trusted HTTPS edge. Publisher OAuth consent remains a separate route and authorization model.
+
 ### Promethee integration facade
 
-The preferred backend surface is a small set of publisher-owned read-only views or RPC functions. This facade should:
+The backend surface is a small set of publisher-owned versioned RPC functions: three reads and two create-only mutations. This facade should:
 
 - derive user identity from the JWT, never from a client-supplied `user_id`;
 - return only fields required by the MCP contract;
 - enforce deterministic limits and ordering;
 - hide internal schema and synchronization details;
 - preserve the option to change tables without breaking the MCP contract.
+- enforce durable create idempotency and uniform cross-tenant not-found behavior.
 
-Direct table queries are a fallback for a controlled prototype only and require explicit approval plus an RLS review.
+Direct table queries/writes and generic RPC execution are excluded; they are not a fallback in this repository.
 
 ## Deployment topology
 

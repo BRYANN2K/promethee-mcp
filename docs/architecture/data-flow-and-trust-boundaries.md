@@ -22,7 +22,7 @@ The resource server trusts only configured issuers and verified signing keys. Di
 
 ### Boundary 4: resource server and Promethee Supabase
 
-The resource server sends only an approved publishable gateway key where required and a user-scoped token. It calls only allowlisted views/RPCs with bounded parameters.
+The resource server may pass a verified Supabase OAuth user token only into a request-scoped Supabase adapter closure. Application use cases receive only normalized authorization facts. The adapter calls only five fixed RPC names—three reads and two create-only mutations—and Supabase must enforce the same user, OAuth `client_id`, MCP audience, tool permission, and operation policy through RLS.
 
 ### Boundary 5: Promethee RLS and stored data
 
@@ -30,20 +30,41 @@ Promethee owns the authoritative authorization and data policy. RLS derives the 
 
 ### Boundary 6: operator storage and logs
 
-Operational state must be separated from Promethee content. Logs may contain request IDs, tool names, latency, status classes, client ID, and pseudonymous subject IDs; they must not contain task titles, session labels, email addresses, tokens, or raw tool results.
+Operational state must be separated from Promethee content. The single-user personal deployment may store only the ADR-0007 encrypted authentication envelope and non-secret retention preference; it never caches task or project content. Logs may contain request IDs, tool names, latency, status classes, client ID, and pseudonymous subject IDs; they must not contain task titles, session labels, email addresses, tokens, or raw tool results.
 
-## Proposed read flow
+### Boundary 7: trusted single-user edge
+
+The checked-in VPS candidate terminates TLS and operator browser authentication at Caddy. It adds a deployment-secret header to `/connect/*`; browsers cannot supply that trust by themselves. `/mcp` bypasses browser Basic Auth and requires its own backend-validated static bearer. The Node service is not published directly and accepts only the configured public Host/Origin plus its private authority.
+
+### Boundary 8: local stdio process and loopback browser
+
+An MCP client launches the local process over stdio. JSON-RPC is the only stdout protocol. The same process serves a bounded static login shell and connection bridge on `127.0.0.1`; it never binds the onboarding surface to a LAN or public interface. Exact Host and Origin checks protect connection mutations. The status tool may disclose only the loopback login URL and connection boolean. Git+npx and the selected Git ref are supply-chain boundaries because npm installs dependencies and runs the package preparation lifecycle.
+
+## Read flow
 
 1. Receive an authenticated MCP tool request.
 2. Resolve the tool to a fixed scope and backend operation.
 3. Validate the JSON input against a closed schema.
 4. Apply server-side maximum date ranges, page sizes, and timeouts.
-5. Call one publisher-approved view or RPC using the user's token.
+5. Capture the verified Supabase user token inside a request-scoped adapter and call one fixed allowlisted RPC. Configured CLI mode composes this path; repository tests replace the HTTP boundary with a mock.
 6. Reject backend rows that fail the expected response schema.
 7. Remove fields not in the MCP data contract.
 8. Attach source observation time and freshness metadata.
 9. Return the normalized result.
 10. Record content-free operational metrics.
+
+For local stdio, steps 1–2 first resolve the current browser-paired connection. When none exists, the use case returns `authentication_required` before step 3 and the user can obtain the separate loopback login URL from `promethee_connection_status`.
+
+## Create flow
+
+1. Require `projects:write` or `tasks:write` before parsing tool input.
+2. Validate one closed create object plus a canonical 16–64 character `clientRequestId`.
+3. Call exactly `mcp_create_project_v1` or `mcp_create_task_v1`; never select a table, URL, or RPC from input.
+4. Let the publisher boundary derive the user from the access token and bind durable idempotency to subject, OAuth client, operation, request identifier, and canonical input.
+5. Validate the closed created/replayed/conflict/not-found outcome and return only normalized fields.
+6. Never retry an ambiguous write with a new request identifier.
+
+The synthetic facade implements this behavior in memory. The Supabase adapter and MCP runtime are verified with mocked HTTP, but the authoritative durable RPC behavior is unavailable until Promethee deploys it.
 
 ## Proposed data minimization
 

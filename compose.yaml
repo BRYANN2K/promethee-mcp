@@ -1,0 +1,87 @@
+name: promethee-mcp
+
+services:
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PROMETHEE_MCP_MODE: personal
+      PROMETHEE_MCP_BIND_HOST: 0.0.0.0
+      PROMETHEE_MCP_PORT: 3210
+      PROMETHEE_MCP_PUBLIC_URL: https://${MCP_DOMAIN}/mcp
+      PROMETHEE_MCP_PERSONAL_ACCESS_TOKEN: ${PROMETHEE_MCP_PERSONAL_ACCESS_TOKEN}
+      PROMETHEE_MCP_EDGE_TOKEN: ${PROMETHEE_MCP_EDGE_TOKEN}
+      PROMETHEE_MCP_CURSOR_KEY_BASE64URL: ${PROMETHEE_MCP_CURSOR_KEY_BASE64URL}
+      PROMETHEE_MCP_SESSION_KEY_BASE64URL: ${PROMETHEE_MCP_SESSION_KEY_BASE64URL}
+      PROMETHEE_MCP_SESSION_FILE: /var/lib/promethee-mcp/session.enc
+    expose:
+      - "3210"
+    volumes:
+      - session-data:/var/lib/promethee-mcp
+    networks:
+      - private
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 20s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3210/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  edge:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      args:
+        VITE_SUPABASE_URL: https://auth.promethee.io
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${PROMETHEE_SUPABASE_PUBLISHABLE_KEY}
+        VITE_MCP_BASE_URL: https://${MCP_DOMAIN}
+    restart: unless-stopped
+    depends_on:
+      mcp:
+        condition: service_healthy
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL}
+      MCP_DOMAIN: ${MCP_DOMAIN}
+      PROMETHEE_MCP_ADMIN_USER: ${PROMETHEE_MCP_ADMIN_USER}
+      PROMETHEE_MCP_ADMIN_PASSWORD_HASH: ${PROMETHEE_MCP_ADMIN_PASSWORD_HASH}
+      PROMETHEE_MCP_EDGE_TOKEN: ${PROMETHEE_MCP_EDGE_TOKEN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - private
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+networks:
+  private:
+    driver: bridge
+
+volumes:
+  session-data:
+  caddy-data:
+  caddy-config:

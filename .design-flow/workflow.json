@@ -1,0 +1,55 @@
+{
+  "approval": {
+    "approval_ref": "user-approved-snapshot-4227597c-2026-08-28",
+    "approved_at": "2026-08-28T14:06:55Z",
+    "approver": "human",
+    "artifact_sha256": {
+      "claims": "fb8c9aa69a832b3ccb643b623c1686648f4c1e57c5b0cca69f5c05a12265b56c",
+      "components": "1b57009092fc74c7d59dc36f3593f4909b321cc6c31203b6f27478898cf2318c",
+      "design_system": "0f0376c19fd6527ebd2db969daa95c9e6c8f4dccc785cb0a53f0ec4c2c092b49",
+      "page_copy": "043d0c2411488b8a33b836e3de41c7cb9606f2d5460b6cecc4d2ad700d4dbe92",
+      "product_story": "53d3b101cdb3a8d3cd109bc5dcb4d746ca83d502bfc9034be773e6f639d1e877",
+      "project_ui_skill": "57d4b300317e6dc7d105b3bcf1113c7853168aa49bc40f84fe5331f73ed18e0f",
+      "reference_ledger": "f5a3590de68e9ab0b68d66763c7f80317853a320d5bf652426e8a664391d3c31",
+      "tokens": "658cb06f3f3ba8711e4b39013ba6bead6974821991a5ee7487eaf057b6b10fff"
+    },
+    "review_snapshot_sha256": "4227597ce79a5aa5ebd128d218ea6b8f6746303c173ae1e668af26d896cdc9ba"
+  },
+  "artifacts": {
+    "claims": ".design-flow/artifacts/CLAIMS.md",
+    "components": ".design-flow/artifacts/COMPONENTS.md",
+    "design_system": ".design-flow/artifacts/DESIGN.md",
+    "page_copy": ".design-flow/artifacts/PAGE-COPY.md",
+    "product_story": ".design-flow/artifacts/PRODUCT-STORY.md",
+    "project_ui_skill": ".design-flow/artifacts/PROJECT-UI.md",
+    "reference_ledger": ".design-flow/artifacts/REFERENCE-LEDGER.md",
+    "tokens": ".design-flow/artifacts/tokens.json"
+  },
+  "compiled_skill": {
+    "compiled_at": "2026-08-28T14:06:55Z",
+    "path": ".agents/skills/promethee-mcp-ui/SKILL.md",
+    "sha256": "57d4b300317e6dc7d105b3bcf1113c7853168aa49bc40f84fe5331f73ed18e0f",
+    "source_sha256": "57d4b300317e6dc7d105b3bcf1113c7853168aa49bc40f84fe5331f73ed18e0f"
+  },
+  "phase": "build-allowed",
+  "project_name": "Promethee MCP",
+  "project_slug": "promethee-mcp",
+  "quality_report": ".design-flow/QUALITY-REPORT.md",
+  "review_artifact_sha256": {
+    "claims": "fb8c9aa69a832b3ccb643b623c1686648f4c1e57c5b0cca69f5c05a12265b56c",
+    "components": "1b57009092fc74c7d59dc36f3593f4909b321cc6c31203b6f27478898cf2318c",
+    "design_system": "0f0376c19fd6527ebd2db969daa95c9e6c8f4dccc785cb0a53f0ec4c2c092b49",
+    "page_copy": "043d0c2411488b8a33b836e3de41c7cb9606f2d5460b6cecc4d2ad700d4dbe92",
+    "product_story": "53d3b101cdb3a8d3cd109bc5dcb4d746ca83d502bfc9034be773e6f639d1e877",
+    "project_ui_skill": "57d4b300317e6dc7d105b3bcf1113c7853168aa49bc40f84fe5331f73ed18e0f",
+    "reference_ledger": "f5a3590de68e9ab0b68d66763c7f80317853a320d5bf652426e8a664391d3c31",
+    "tokens": "658cb06f3f3ba8711e4b39013ba6bead6974821991a5ee7487eaf057b6b10fff"
+  },
+  "review_snapshot_sha256": "4227597ce79a5aa5ebd128d218ea6b8f6746303c173ae1e668af26d896cdc9ba",
+  "schema_version": "1.0",
+  "surface": "web-application",
+  "ui_roots": [
+    "web"
+  ],
+  "updated_at": "2026-08-28T14:06:55Z"
+}

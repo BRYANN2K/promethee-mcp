@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Install Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            web/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Validate backend
+        run: npm run check
+
+      - name: Audit backend runtime dependencies
+        run: npm audit --omit=dev
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci --ignore-scripts
+
+      - name: Validate web application
+        working-directory: web
+        run: npm run check
+
+      - name: Audit web runtime dependencies
+        working-directory: web
+        run: npm audit --omit=dev
+
+      - name: Validate deployment configuration
+        env:
+          ACME_EMAIL: operator@example.test
+          MCP_DOMAIN: mcp.example.test
+          PROMETHEE_MCP_ADMIN_PASSWORD_HASH: test_hash
+          PROMETHEE_MCP_ADMIN_USER: operator
+          PROMETHEE_MCP_CURSOR_KEY_BASE64URL: BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc
+          PROMETHEE_MCP_EDGE_TOKEN: EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+          PROMETHEE_MCP_PERSONAL_ACCESS_TOKEN: MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+          PROMETHEE_MCP_SESSION_KEY_BASE64URL: CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+          PROMETHEE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_synthetic_ci_value
+        run: docker compose config --quiet
+
+      - name: Build production service image
+        run: docker build --tag promethee-mcp:test .
+
+      - name: Build production edge image
+        run: >-
+          docker build
+          --file deploy/Dockerfile
+          --build-arg VITE_SUPABASE_URL=https://auth.promethee.io
+          --build-arg VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_synthetic_ci_value
+          --build-arg VITE_MCP_BASE_URL=https://mcp.example.test
+          --tag promethee-mcp-edge:test
+          .

@@ -11,7 +11,7 @@ Principles:
 - use user identity from authorization, never response payload;
 - return explicit timestamps and units;
 - distinguish absent, redacted, and unknown values;
-- reject unexpected source shapes instead of passing them through.
+- reject unexpected source shapes instead of passing them through. The synthetic slice uses closed source schemas, including rejection of additional fields.
 
 All identifiers are strings. Whether they are raw Promethee identifiers or MCP-issued opaque references remains an open decision.
 
@@ -150,9 +150,10 @@ All titles and labels are user-controlled data. MCP descriptions and responses m
 
 - Cursors are opaque and bound to the subject, scope, filter, and ordering.
 - Clients must not construct or modify cursors.
-- Cursor expiry and replay behavior require an implementation decision.
+- Synthetic cursors expire after 60 seconds and may be replayed unchanged before expiry.
+- Synthetic cursors are authenticated and bound to subject, tool, scope, filters, page size, and ordering version.
 - A cursor must not reveal internal row identifiers or query structure.
 
 ## Source compatibility
 
-The adapter should validate a publisher-supplied contract version and the exact response schema. Unknown fields may be ignored only if the contract permits additive compatibility; missing or invalid required fields fail closed.
+The synthetic adapter validates an exact closed response schema and rejects unknown fields. A production adapter may ignore additive fields only after an approved, versioned Promethee facade contract explicitly allows that compatibility behavior; missing or invalid required fields always fail closed.

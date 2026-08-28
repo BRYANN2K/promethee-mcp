@@ -14,7 +14,21 @@ An MCP client should receive a token for the MCP resource only after the user au
 
 **Unknown:** whether Promethee's current Supabase Auth deployment enables the required OAuth server features and whether Promethee will authorize this project as a resource/client.
 
-## Proposed browser flow
+## Browser flow
+
+### Local stdio onboarding
+
+1. The MCP client launches `prometheemcp --stdio` through a reviewed Git+npx package reference.
+2. The process starts JSON-RPC on stdio and a bounded HTTP login surface on `127.0.0.1`.
+3. The client calls `promethee_connection_status`; the MCP returns only the local login URL.
+4. The user chooses `7 days` or `Never`, enters their email, and verifies the six-digit code in that browser page.
+5. The page sends the verified session only to the same loopback origin.
+6. The running server verifies the session with Promethee Auth and swaps in a caller-bound adapter for subsequent tool calls.
+7. A later status call reports only `connected: true`; no process restart or token copy is required.
+
+The LLM never receives the email address, code, access token, refresh token, or browser publishable key from this flow. Account tools remain visible while disconnected so clients have a stable tool catalog, but they fail before any upstream data operation.
+
+### Remote OAuth flow
 
 1. The MCP client calls the MCP endpoint without a token.
 2. The server returns `401` with a `WWW-Authenticate` challenge pointing to protected resource metadata.
@@ -28,6 +42,8 @@ An MCP client should receive a token for the MCP resource only after the user au
 10. The MCP server validates every access token before processing a request.
 
 No token is entered into an AI conversation or copied from the Promethee application.
+
+Steps 5–8 are implemented in `web/`: the login route sends and verifies Promethee's email OTP through the pinned Supabase origin, and the consent route loads the provider authorization details before approving or denying. The complete flow still needs a registered OAuth client, deployed consent URL, exact MCP resource, and staging code-exchange evidence.
 
 ## Authorization-server options
 
@@ -64,16 +80,21 @@ Costs and risks:
 
 This option remains a fallback, not the preferred design.
 
-## Proposed scopes
+## MCP permission contracts
+
+The executable contract maps all current task/project reads to `tasks:read` and uses distinct scopes for both create capabilities:
 
 | Scope | User-facing meaning | Backend surface |
 | --- | --- | --- |
-| `tasks:read` | Read the user's approved task and project fields | dedicated task/project view or RPC |
+| `tasks:read` | Read the user's approved task fields | dedicated task view or RPC |
+| `projects:read` | Read the user's approved project fields | dedicated project view or RPC |
+| `tasks:write` | Create one task with bounded input | fixed create-task RPC with RLS and durable idempotency |
+| `projects:write` | Create one project with bounded input | fixed create-project RPC with RLS and durable idempotency |
 | `sessions:read` | Read the user's approved historical session fields | dedicated session view or RPC |
 | `reports:read` | Read aggregated time totals derived from approved sessions | aggregation RPC |
 | `status:read` | Read an explicitly defined current-status observation | dedicated status RPC; optional |
 
-Scopes are proposals. Promethee must approve the names, claims, field projections, and escalation behavior.
+These names are the MCP permission contract, not a claim about the current Promethee Supabase OAuth deployment. The verifier intersects the scopes actually present in a resource-bound access token with a server-owned allowlist for the OAuth client. It never upgrades an identity-only token from client policy alone. If the deployed Supabase OAuth server cannot issue these custom resource scopes, every data tool fails as `insufficient_scope`; Promethee must then approve an access-token hook or a separate authorization broker. Production writes remain blocked until the displayed read/write contract is enforceable end to end.
 
 ## Token validation
 
@@ -91,10 +112,14 @@ The server must reject tokens minted for the generic Supabase API when they are 
 
 ## Backend credential boundary
 
-The service may use only:
+Supabase documents that an MCP server may call its APIs on behalf of the user with the Supabase OAuth access token, allowing RLS to evaluate both `auth.uid()` and the OAuth `client_id`. The raw token is therefore permitted only in the HTTP authentication boundary and a request-scoped Supabase adapter closure. It is absent from `AuthContext`, tool inputs, application use-case arguments, cursors, results, and logs.
 
-- a publisher-approved public/publishable Supabase key where the gateway requires one; and
-- the authenticated user's scoped access token.
+A production adapter may use this token only through a publisher-approved mechanism that:
+
+- preserves the authenticated subject without trusting a caller-provided user ID;
+- requires an MCP-specific audience set by an approved Supabase access-token hook;
+- maps approved OAuth client IDs to server-owned MCP permissions without treating OIDC scopes as database authorization;
+- may include a public/publishable Supabase gateway key where the gateway requires one.
 
 The service must not accept, store, or use:
 
@@ -104,18 +129,25 @@ The service must not accept, store, or use:
 - a caller-supplied user identifier as authorization;
 - tokens received through MCP prompts or tool arguments.
 
-## Session storage
+The request-scoped adapter seam, verifier, CLI configuration reader, OTP page, and consent page are implemented. No production token hook, OAuth client, RPC/RLS deployment, or staging connection has been approved or enabled.
 
-Preferred behavior:
+## Personal session storage
 
-- keep access tokens in memory only;
-- encrypt refresh tokens at rest when refresh is required;
-- bind stored grants to an issuer, subject, MCP client, resource, and scope set;
-- rotate refresh tokens according to issuer behavior;
-- delete the grant on logout, revocation, account deletion, or irrecoverable refresh failure;
-- never log authorization codes, tokens, email OTPs, or authorization headers.
+The local stdio composition and fully configured single-user production mode implement ADR-0007 retention semantics. The local composition defaults a new install to seven-day retention, generates a per-user encryption key in the platform configuration directory, and restores an existing `Never` preference without token persistence. The key and ciphertext are protected by the operating-system user boundary; this is not a claim of protection after compromise of that account.
 
-The exact storage mechanism is an open implementation decision.
+The explicit development `serve --mode personal` composition remains memory-only unless persistence is deliberately injected. Persistent modes enforce:
+
+- access and refresh tokens are held in one AES-256-GCM authenticated envelope under an operator-provided 32-byte key;
+- the envelope is bounded, atomically replaced, permissioned `0600`, and rejected when malformed, non-canonical, expired, or not a regular file;
+- the seven-day deadline is fixed when persistence is enabled and is not silently extended by token refresh;
+- a successful upstream refresh atomically replaces both stored tokens;
+- each refresh is bound to the session generation that started it, so disconnect or re-pair invalidates an older in-flight result;
+- an irrecoverable refresh failure, expired retention, explicit disconnect, or `Never` choice removes all stored token material;
+- `Never` persists only the non-secret preference so a later login cannot silently re-enable storage;
+- the unified connection page loads the retention choice before enabling email entry and saves it before pairing the verified session;
+- retention responses never contain tokens, encryption keys, subjects, session identifiers, or file paths.
+
+The production MCP bearer and trusted-edge secret are separate deployment credentials; neither is a Promethee token. Multi-user grant storage, centralized revocation, and publisher OAuth remain outside this personal composition.
 
 ## Self-hosting concern
 
@@ -126,7 +158,7 @@ Arbitrary self-hosted domains complicate OAuth redirect registration. Before cla
 - standards-compliant dynamic client registration or client metadata documents;
 - a publisher-approved loopback/device-style flow.
 
-The repository currently promises none of these.
+The repository implements the UI/runtime sides of a pre-registered Supabase OAuth client; it does not create or register that client automatically.
 
 ## Failure behavior
 

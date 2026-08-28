@@ -1,0 +1,2 @@
+web/dist/** linguist-generated=true
+web/dist/assets/*.js -diff

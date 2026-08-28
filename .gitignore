@@ -1,11 +1,18 @@
-# software-project-bootstrap:begin
-# Local credentials and machine-specific state; review this managed block before changing it.
+node_modules/
+dist/
+!web/dist/
+!web/dist/**
+coverage/
 .env
 .env.*
 !.env.example
+!.env.production.example
+*.local
+*.log
 *.pem
 *.key
 *.p12
 *.pfx
+*.tgz
+.tmp/
 .DS_Store
-# software-project-bootstrap:end

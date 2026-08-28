@@ -1,0 +1,13 @@
+.git
+.github
+.agents
+.design-flow
+.tmp
+dist
+node_modules
+web/dist
+web/node_modules
+*.log
+.env
+.env.*
+!.env.production.example

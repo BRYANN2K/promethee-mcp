@@ -1,0 +1,45 @@
+{
+  admin off
+  email {$ACME_EMAIL}
+}
+
+{$MCP_DOMAIN} {
+  encode zstd gzip
+
+  route {
+    @browser not path /mcp /mcp/* /healthz
+    basic_auth @browser {
+      {$PROMETHEE_MCP_ADMIN_USER} {$PROMETHEE_MCP_ADMIN_PASSWORD_HASH}
+    }
+
+    @connection path /connect/*
+    handle @connection {
+      reverse_proxy mcp:3210 {
+        header_up X-Promethee-Edge-Token {$PROMETHEE_MCP_EDGE_TOKEN}
+      }
+    }
+
+    @mcp path /mcp /mcp/*
+    handle @mcp {
+      reverse_proxy mcp:3210
+    }
+
+    handle /healthz {
+      reverse_proxy mcp:3210
+    }
+
+    handle {
+      header {
+        Cache-Control "no-store"
+        Content-Security-Policy "default-src 'self'; connect-src 'self' https://auth.promethee.io; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; object-src 'none'; base-uri 'none'"
+        Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+        Referrer-Policy "no-referrer"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+      }
+      root * /srv
+      try_files {path} /index.html
+      file_server
+    }
+  }
+}

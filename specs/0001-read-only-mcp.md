@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed, 2026-08-27. No implementation or Promethee approval exists.
+Synthetic implementation available and retained as the read contract. The Supabase OAuth verifier and three fixed read RPCs are wired into explicit CLI mode, while live Promethee compatibility, production approval, and deployment evidence remain absent. ADR-0005/SPEC-0002 add two create-only tools without widening this read contract.
 
 ## Problem
 
@@ -100,7 +100,9 @@ Detailed draft schemas are in [MCP contract](../docs/api/mcp-contract.md) and [d
 - Dependency errors expose no internal SQL, policy, token, or cross-user existence.
 - Timeouts and cancellation stop bounded work without blind mutation/retry.
 
-## Implementation slices and evidence
+## Implementation slices and required evidence
+
+The lists below are acceptance evidence requirements for each slice, not claims that every item already exists. The current repository has only the synthetic Tasks/Projects subset described in the status section.
 
 ### Slice A: synthetic protocol and auth
 

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="Isolated Promethee MCP unified connection and publisher OAuth design preview.">
+    <title>Promethee MCP — Single Pass review</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#preview-main">Skip to preview</a>
+
+    <header class="review-bar" aria-label="Design review controls">
+      <div class="review-brand"><span aria-hidden="true"></span><strong>Promethee MCP</strong><small>Single Pass</small></div>
+      <nav class="review-tabs" aria-label="Preview screens">
+        <button class="review-tab is-active" type="button" data-view="connection" aria-pressed="true">Connection</button>
+        <button class="review-tab" type="button" data-view="consent" aria-pressed="false">Publisher OAuth</button>
+        <button class="review-tab" type="button" data-view="states" aria-pressed="false">States</button>
+      </nav>
+      <p class="review-status"><span aria-hidden="true"></span>Design preview · no live connection</p>
+    </header>
+
+    <main id="preview-main">
+      <section class="preview-screen connection-canvas is-visible" data-screen="connection" aria-labelledby="connection-title">
+        <article class="connection-card">
+          <header class="connection-header">
+            <span class="product-mark" aria-hidden="true">
+              <svg viewBox="0 0 32 32"><path d="M16 26V14"></path><path d="M16 18c-5.5 0-8.5-3.2-8.5-8.5C13 9.5 16 12.7 16 18Z"></path><path d="M16 14c0-4.8 2.8-7.5 7.5-7.5 0 4.8-2.8 7.5-7.5 7.5Z"></path></svg>
+            </span>
+            <p class="product-name">Promethee <strong>MCP</strong></p>
+            <h1 id="connection-title">Connect to Promethee</h1>
+            <p>Choose how long this server can keep you signed in, then use the code sent to your email.</p>
+          </header>
+
+          <form id="connection-form" novalidate>
+            <fieldset class="retention-group">
+              <legend>Renew this session</legend>
+              <div class="retention-grid">
+                <label class="retention-choice is-selected">
+                  <input type="radio" name="retention" value="seven-days" checked>
+                  <span><strong>7 days</strong><small>Restore after restart</small></span>
+                  <em>Selected</em>
+                </label>
+                <label class="retention-choice">
+                  <input type="radio" name="retention" value="memory">
+                  <span><strong>Never</strong><small>Until this server stops</small></span>
+                  <em>Select</em>
+                </label>
+              </div>
+            </fieldset>
+
+            <div class="field-group">
+              <label for="login-email">Email</label>
+              <div class="input-shell">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"></path><path d="m4 7 8 6 8-6"></path></svg>
+                <input id="login-email" name="email" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com" aria-describedby="login-email-help login-email-error" required>
+              </div>
+              <p class="field-help" id="login-email-help">We’ll send a six-digit code. No account will be created.</p>
+              <p class="field-error" id="login-email-error" aria-live="polite"></p>
+            </div>
+
+            <div class="code-delivery" data-code-delivery hidden role="status">
+              <span aria-hidden="true">✓</span>
+              <div><strong>Code sent</strong><small>Enter the latest code from your email.</small></div>
+              <button type="button" data-change-email>Change email</button>
+            </div>
+
+            <div class="field-group" data-code-group hidden>
+              <label for="login-code">6-digit code</label>
+              <div class="input-shell">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
+                <input class="code-input" id="login-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000" aria-describedby="login-code-help login-code-error">
+              </div>
+              <div class="field-line"><p class="field-help" id="login-code-help">Use the newest code only.</p><button type="button" data-resend-code>Send a new code</button></div>
+              <p class="field-error" id="login-code-error" aria-live="polite"></p>
+            </div>
+
+            <p class="form-status" id="login-status" role="status" aria-live="polite"></p>
+            <button class="primary-action" type="submit" data-login-submit><span>Send code</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button>
+          </form>
+
+          <section class="connection-result" data-connection-result hidden aria-labelledby="connected-title">
+            <span class="confirmed-mark" aria-hidden="true">✓</span>
+            <h2 id="connected-title" tabindex="-1">Connected</h2>
+            <p data-connected-copy>This server can restore your session for up to 7 days.</p>
+            <small>You can close this page.</small>
+          </section>
+
+          <footer class="connection-footer">
+            <p><span aria-hidden="true"></span>Your code goes to Promethee. Tokens are never displayed here.</p>
+            <a href="https://x.com/bryann2k_dev" rel="noreferrer">Like my work? Follow @bryann2k_dev on X.</a>
+          </footer>
+        </article>
+      </section>
+
+      <section class="preview-screen" data-screen="consent" aria-labelledby="consent-title">
+        <article class="consent-card">
+          <header class="panel-header"><p class="product-name">Promethee <strong>MCP</strong></p><span>Review fixture</span></header>
+          <p class="eyebrow">CONNECTION REQUEST</p>
+          <h1 id="consent-title">Claude Desktop wants to connect.</h1>
+          <p class="lede">Review the identity and data boundaries before you decide.</p>
+          <dl class="identity-list">
+            <div><dt>Requesting client</dt><dd>Claude Desktop</dd></div>
+            <div><dt>MCP resource</dt><dd class="mono">mcp.example.test</dd></div>
+            <div><dt>Returns to</dt><dd>Registered client address</dd></div>
+          </dl>
+          <section class="access-group" aria-labelledby="data-access-title">
+            <div class="section-label"><h2 id="data-access-title">Promethee data access</h2><span>Read + create</span></div>
+            <div class="access-row"><strong>Read tasks and projects</strong><p>Titles, status, dates, and project association.</p></div>
+            <div class="access-row"><strong>Create projects</strong><p>Add one named project. No update, archive, or delete access.</p></div>
+            <div class="access-row"><strong>Create tasks</strong><p>Add one task. No completion, update, or delete access.</p></div>
+          </section>
+          <p class="policy-note"><strong>Create actions change Promethee data.</strong> Each action still requires its own scoped tool call and Promethee-owned RLS.</p>
+          <div class="decision-actions"><button class="secondary-action" type="button" data-consent-deny>Deny</button><button class="primary-action primary-action--auto" type="button" data-consent-allow>Allow requested access</button></div>
+          <p class="form-status consent-result" id="consent-result" role="status" aria-live="polite"></p>
+        </article>
+      </section>
+
+      <section class="preview-screen" data-screen="states" aria-labelledby="states-title">
+        <div class="states-shell">
+          <header class="states-header"><div><p class="eyebrow">REVIEW SET</p><h1 id="states-title">Connection states</h1><p class="lede">The same card handles recovery and success without opening another surface.</p></div><span>Preview fixtures</span></header>
+          <div class="states-grid">
+            <article class="state-card"><small>INCORRECT CODE</small><label for="state-code">6-digit code</label><div class="input-shell"><input id="state-code" class="code-input" value="184205" aria-invalid="true"></div><p class="field-error is-visible">This code is incorrect or has expired.</p><button class="primary-action" type="button">Connect</button></article>
+            <article class="state-card"><small>SETTINGS UNAVAILABLE</small><div class="inline-state inline-state--error"><span aria-hidden="true">!</span><div><strong>Connection paused</strong><p>Your renewal choice could not be loaded. Try again before requesting a code.</p></div></div><button class="secondary-action secondary-action--wide" type="button">Try again</button></article>
+            <article class="state-card"><small>CONNECTED · 7 DAYS</small><div class="state-success"><span aria-hidden="true">✓</span><h2>Connected</h2><p>This server can restore your session for up to 7 days.</p><em>You can close this page.</em></div></article>
+            <article class="state-card"><small>CONNECTED · NEVER</small><div class="state-success"><span aria-hidden="true">✓</span><h2>Connected</h2><p>This session ends when the server stops.</p><em>You can close this page.</em></div></article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

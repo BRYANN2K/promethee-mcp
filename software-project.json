@@ -1,27 +1,53 @@
 {
   "constraints": [
-    "Promethee-managed Supabase remains the proposed system of record; production access requires explicit publisher approval.",
-    "The first release is read-only and uses only documented user-scoped authorization.",
+    "Promethee-managed Supabase remains the proposed system of record; staging and production access require explicit publisher approval.",
+    "The intended connected release is limited to approved reads plus bounded create-task/create-project tools through an approved user-scoped authorization boundary.",
+    "The verified user bearer token never reaches application use cases or AuthContext; publisher mode confines it to fixed RPC calls and personal mode confines it to its connection store plus fixed tasks/task_projects PostgREST calls, with optional AES-256-GCM single-user retention for at most seven days.",
     "Distributed artifacts never contain privileged database credentials or reuse sessions extracted from the Promethee desktop application.",
     "Ordinary development and validation use synthetic fixtures and never query or mutate Promethee production data.",
-    "The repository remains private until ownership, branding, licensing, and disclosure boundaries are approved."
+    "The local executable is loopback-only and denies every bearer token by default.",
+    "The repository is public as an unofficial source release; it must not imply Promethee ownership or endorsement, and no license is selected."
   ],
   "documentation": [
     "architecture",
     "adr",
     "api",
+    "development",
+    "operations",
     "handover"
   ],
+  "implementation": {
+    "mode": "synthetic-default",
+    "cli": "implemented-git-npx-onboarding-local-stdio-synthetic-personal-and-configured-supabase",
+    "production_network": "personal-single-user-trusted-edge-plus-configurable-publisher-mode",
+    "promethee_adapter": "implemented-fixed-five-rpc-plus-personal-fixed-postgrest",
+    "supabase_oauth_verifier": "implemented-configurable-not-live-verified",
+    "browser_login": "implemented-unified-retention-passwordless-otp-personal-pairing-served-on-local-loopback-plus-separate-oauth-consent",
+    "local_onboarding": "implemented-git-npx-client-configuration-and-same-process-stdio-browser-pairing",
+    "accepted_create_contract": "implemented-not-live-verified",
+    "tools": [
+      "promethee_connection_status",
+      "promethee_list_tasks",
+      "promethee_get_task",
+      "promethee_list_projects",
+      "promethee_create_project",
+      "promethee_create_task"
+    ],
+    "planned_tools": []
+  },
   "languages": [
     "typescript"
   ],
   "open_decisions": [
     "Obtain an accountable Promethee decider and approve the official integration boundary.",
     "Choose between Promethee Supabase OAuth server mode and a separately operated authorization broker.",
-    "Approve the MCP scopes and the dedicated read-only views or RPC functions exposed by Promethee.",
-    "Select the TypeScript HTTP framework and MCP SDK version after implementation review.",
+    "Approve forwarding the verified Supabase user token only into the request-scoped fixed-RPC adapter so publisher-owned RLS can enforce user and OAuth-client policy.",
+    "Approve the MCP scopes and dedicated read-only views or RPC functions exposed by Promethee.",
+    "Approve the create-only RPC, RLS, durable idempotency, quota, and audit contracts.",
+    "Approve field, identifier, ordering, deletion, freshness, quota, and compatibility semantics.",
     "Define data retention, audit logging, abuse controls, availability targets, and backup ownership.",
-    "Approve repository ownership, product naming, branding, license, distribution, and release process."
+    "Exercise the released self-hosting composition on a clean VPS and record rollback evidence.",
+    "Decide repository ownership, product naming, branding, license, contribution policy, and the process for releases after v0.1.0."
   ],
   "package_managers": [
     "npm"
@@ -30,7 +56,13 @@
   "project": {
     "kind": "backend",
     "name": "promethee-mcp",
-    "summary": "A proposed self-hostable MCP service that exposes approved Promethee data through user-scoped access to the Promethee Supabase backend."
+    "summary": "A self-hostable MCP server with bounded Promethee task/project reads, create-only tools, CLI operation, and external OAuth UI."
+  },
+  "runtime": {
+    "mcp_sdk": "2.0.0",
+    "node": ">=22.14.0 <23",
+    "npm": "10.9.2",
+    "typescript": "7.0.2"
   },
   "schema_version": "1.0",
   "source_roots": [
@@ -40,5 +72,10 @@
   "test_roots": [
     "tests"
   ],
-  "validation": []
+  "validation": [
+    "npm run typecheck",
+    "npm test",
+    "npm run build",
+    "npm run check"
+  ]
 }

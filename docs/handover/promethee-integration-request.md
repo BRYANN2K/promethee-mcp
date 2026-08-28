@@ -2,7 +2,7 @@
 
 ## Proposal
 
-Build an open-source, self-hostable, read-only MCP service that authenticates Promethee users independently and queries a narrow publisher-owned Supabase facade for tasks, projects, sessions, and time reports.
+Build a self-hostable MCP service that authenticates Promethee users independently and exposes a narrow publisher-owned Supabase facade for bounded task/project reads and create-only mutations. Sessions and time reporting remain proposed follow-up slices.
 
 The service would not require the Promethee desktop application, read local SQLite, reuse desktop sessions, or receive privileged database credentials.
 
@@ -15,7 +15,7 @@ The service would not require the Promethee desktop application, read local SQLi
 - Is `promethee-mcp` an approved name?
 - Which logo, trademarks, screenshots, and product descriptions may be used?
 - Which license and contribution policy apply?
-- May the repository become public, and what information must remain private?
+- The repository owner published the implementation as an unofficial public source release. What information, branding, and compatibility claims would Promethee require for any official integration?
 
 ### Authentication
 
@@ -31,17 +31,20 @@ The service would not require the Promethee desktop application, read local SQLi
 Approve or reject the proposed scopes:
 
 - `tasks:read`
+- `projects:write`
+- `tasks:write`
 - `sessions:read`
 - `reports:read`
 - optional `status:read`
 
 For each scope, approve exact fields, bounds, retention, and use cases. Confirm whether raw identifiers may leave Promethee or must be replaced by opaque references.
 
-Explicitly confirm that the first release excludes writes, timer control, notes, screenshots, app activity, AI memories, chat, feed, contacts, profile, social, and Storage data.
+Explicitly approve or reject create-project/create-task separately. Confirm that the first release excludes update, completion, archive, delete, bulk, timer control, notes, screenshots, app activity, AI memories, chat, feed, contacts, profile, social, and Storage data.
 
 ### Backend facade
 
-- Will Promethee provide dedicated read-only views or RPC functions?
+- Will Promethee provide the three versioned read RPCs plus `mcp_create_project_v1` and `mcp_create_task_v1`?
+- Will the two create RPCs provide subject/client/operation/input-bound durable idempotency and uniform cross-tenant failure behavior?
 - Will identity always be derived from `auth.uid()` or equivalent server context?
 - What contract version and compatibility signal will the facade expose?
 - What pagination, ordering, deletion, timezone, duration, and freshness semantics apply?
@@ -70,7 +73,7 @@ Explicitly confirm that the first release excludes writes, timer control, notes,
 2. Named product, backend, security/privacy, and support owners.
 3. Approved OAuth/resource/client registration model.
 4. Staging issuer and synthetic accounts.
-5. Dedicated versioned read-only facade.
+5. Dedicated versioned five-RPC facade with RLS and durable create idempotency.
 6. RLS and field-projection review.
 7. Quota, rate-limit, retention, and deprecation contract.
 8. Branding, license, repository, and publication decision.
@@ -86,4 +89,4 @@ Explicitly confirm that the first release excludes writes, timer control, notes,
 
 ## Acceptance gate
 
-Implementation may begin with synthetic auth/data after the architecture is reviewed. Promethee-connected staging implementation begins only after the required issuer, client, scope, facade, and fixture contracts exist. Production access and public release require a separate final approval.
+The synthetic/mock implementation and unofficial public source release exist. Promethee-connected staging and any claim of official production support begin only after the required issuer, client, token-scope, five-RPC, RLS, idempotency, quota, and fixture contracts exist and Promethee gives separate approval.
