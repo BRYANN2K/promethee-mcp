@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type { AuthContext } from '../auth/auth-context.js';
 import { TOOL_SCOPE } from '../application/tool-registry.js';
 import { SYNTHETIC_SLICE_POLICY, type SlicePolicy } from '../policy/slice-policy.js';
+import { PACKAGE_VERSION } from '../version.js';
 import type { PrometheeMcpApplication, ToolUseCase } from './application.js';
 import { createMcpSchemas } from './schemas.js';
 import { errorToolResult, successToolResult } from './tool-result.js';
@@ -73,7 +74,7 @@ async function executeTool(
 
 /** Build one cheap, caller-bound MCP server instance. */
 export function createPrometheeMcpServer(options: CreatePrometheeMcpServerOptions): McpServer {
-    const { application, principal, policy = SYNTHETIC_SLICE_POLICY, serverVersion = '0.1.0' } = options;
+    const { application, principal, policy = SYNTHETIC_SLICE_POLICY, serverVersion = PACKAGE_VERSION } = options;
     const {
         createProjectInputSchema,
         createProjectOutputSchema,

@@ -62,7 +62,7 @@ The five Tasks/Projects tools have executable schemas and local/mock evidence. S
 - [Self-hosting blueprint and local deny-all runtime](operations/self-hosting.md)
 - [Security checklist](operations/security-checklist.md)
 
-The public `v0.1.0` GitHub source release contains the validated CLI, browser authorization UI, and a single-user VPS deployment candidate. No container image, hosted deployment, clean-host VPS acceptance, or publisher staging acceptance exists yet.
+The public `v0.1.1` GitHub source release contains the validated CLI, browser authorization UI, and a single-user VPS deployment candidate. No container image, hosted deployment, clean-host VPS acceptance, or publisher staging acceptance exists yet.
 
 ## Handover
 

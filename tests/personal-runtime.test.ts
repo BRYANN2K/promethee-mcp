@@ -198,6 +198,7 @@ test("production personal runtime requires the trusted edge and MCP bearer", asy
     uiOrigins: ["https://mcp.example.test"],
     mcpAccessToken: MCP_ACCESS_TOKEN,
     edgeToken: EDGE_TOKEN,
+    now: () => 1_787_947_200_000,
     fetch(request) {
       if (new URL(request.url).pathname === "/auth/v1/user") {
         return Promise.resolve(Response.json({ id: SUBJECT }));

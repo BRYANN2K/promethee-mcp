@@ -128,7 +128,16 @@ class LocalKeyFilePersonalSessionPersistence implements PersonalSessionPersisten
     }
 
     public clear(): void {
-        rmSync(this.#sessionFile, { force: true });
+        const key = this.#readKey();
+        if (key === null) {
+            rmSync(this.#sessionFile, { force: true });
+            return;
+        }
+        this.#delegate(key).clear();
+    }
+
+    public compareAndSwap(expected: unknown | null, value: unknown): boolean {
+        return this.#delegate(this.#key()).compareAndSwap(expected, value);
     }
 }
 

@@ -12,6 +12,7 @@ import {
 } from '../runtime/index.js';
 import { createSupabaseRuntime } from '../runtime/supabase-runtime.js';
 import { createSyntheticRuntime } from '../runtime/synthetic-runtime.js';
+import { PACKAGE_VERSION } from '../version.js';
 import {
     createSupabaseCliConfiguration,
     SupabaseCliConfigurationError
@@ -23,7 +24,7 @@ import {
 } from './personal-config.js';
 import { DEFAULT_PACKAGE_SPEC, runInteractiveOnboarding } from './onboarding.js';
 
-export const CLI_VERSION = '0.1.0';
+export const CLI_VERSION = PACKAGE_VERSION;
 export const SYNTHETIC_HOST = '127.0.0.1';
 export const DEFAULT_SYNTHETIC_PORT = 3210;
 

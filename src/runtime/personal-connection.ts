@@ -5,6 +5,7 @@ import type { PersonalSessionPersistence } from "./encrypted-personal-session-fi
 
 const PROMETHEE_SUPABASE_ORIGIN = "https://auth.promethee.io";
 const MAX_TOKEN_BYTES = 8_192;
+const MIN_REFRESH_TOKEN_BYTES = 12;
 const MAX_RESPONSE_BYTES = 32 * 1024;
 const REFRESH_EARLY_MS = 60_000;
 const COMPACT_JWT_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/u;
@@ -15,14 +16,14 @@ const connectionInputSchema = z.object({
   supabaseUrl: z.literal(PROMETHEE_SUPABASE_ORIGIN),
   publishableKey: z.string().min(24).max(1_024),
   accessToken: z.string().min(16).max(MAX_TOKEN_BYTES).regex(COMPACT_JWT_PATTERN),
-  refreshToken: z.string().min(16).max(MAX_TOKEN_BYTES).regex(OPAQUE_REFRESH_PATTERN),
+  refreshToken: z.string().min(MIN_REFRESH_TOKEN_BYTES).max(MAX_TOKEN_BYTES).regex(OPAQUE_REFRESH_PATTERN),
   expiresAt: z.number().int().positive(),
 }).strict();
 
 const userSchema = z.object({ id: z.string().uuid() }).passthrough();
 const refreshSchema = z.object({
   access_token: z.string().min(16).max(MAX_TOKEN_BYTES).regex(COMPACT_JWT_PATTERN),
-  refresh_token: z.string().min(16).max(MAX_TOKEN_BYTES).regex(OPAQUE_REFRESH_PATTERN),
+  refresh_token: z.string().min(MIN_REFRESH_TOKEN_BYTES).max(MAX_TOKEN_BYTES).regex(OPAQUE_REFRESH_PATTERN),
   expires_in: z.number().int().positive().max(86_400),
   user: userSchema,
 }).passthrough();
@@ -43,7 +44,7 @@ export type PersonalConnectionInput = z.infer<typeof connectionInputSchema>;
 
 export interface PersonalConnection {
   readonly subject: string;
-  readonly supabaseUrl: string;
+  readonly supabaseUrl: typeof PROMETHEE_SUPABASE_ORIGIN;
   readonly publishableKey: string;
   readonly accessToken: string;
   readonly expiresAt: number;
@@ -62,6 +63,7 @@ export interface PersonalConnectionStoreOptions {
 }
 
 type StoredSession = PersonalConnection & Readonly<{ refreshToken: string }>;
+type PersistedState = z.infer<typeof persistedStateSchema>;
 type RefreshOperation = Readonly<{
   generation: number;
   session: StoredSession;
@@ -146,55 +148,120 @@ export class PersonalConnectionStore {
 
   #restore(): void {
     if (this.#persistence === undefined) return;
-    try {
-      const stored = this.#persistence.load();
-      if (stored === null) return;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      let stored: unknown | null;
+      try {
+        stored = this.#persistence.load();
+      } catch {
+        throw new Error("session_persistence_failed");
+      }
+      if (stored === null) {
+        this.#session = undefined;
+        this.#retainedUntil = undefined;
+        return;
+      }
+
       const parsed = persistedStateSchema.safeParse(stored);
       if (!parsed.success) {
-        this.#persistence.clear();
+        try {
+          if (this.#persistence.compareAndSwap(stored, { version: 1, mode: this.#retentionMode })) {
+            this.#session = undefined;
+            this.#retainedUntil = undefined;
+            return;
+          }
+        } catch {
+          throw new Error("session_persistence_failed");
+        }
+        continue;
+      }
+
+      const state = parsed.data;
+      if (state.mode === "memory" || state.session === undefined) {
+        this.#retentionMode = state.mode;
+        this.#session = undefined;
+        this.#retainedUntil = undefined;
         return;
       }
-      this.#retentionMode = parsed.data.mode;
-      if (parsed.data.mode === "memory" || parsed.data.session === undefined) return;
-      if (parsed.data.session.retainedUntil <= this.#now()) {
-        this.#persistence.save({ version: 1, mode: "seven-days" });
-        return;
+      if (state.session.retainedUntil <= this.#now()) {
+        try {
+          if (this.#persistence.compareAndSwap(state, { version: 1, mode: "seven-days" })) {
+            this.#retentionMode = "seven-days";
+            this.#session = undefined;
+            this.#retainedUntil = undefined;
+            return;
+          }
+        } catch {
+          throw new Error("session_persistence_failed");
+        }
+        continue;
       }
-      validateSupabasePrometheeFacadeConfiguration({
-        baseUrl: parsed.data.session.supabaseUrl,
-        publishableKey: parsed.data.session.publishableKey,
-      });
+
+      try {
+        validateSupabasePrometheeFacadeConfiguration({
+          baseUrl: state.session.supabaseUrl,
+          publishableKey: state.session.publishableKey,
+        });
+      } catch {
+        try {
+          if (this.#persistence.compareAndSwap(state, { version: 1, mode: state.mode })) {
+            this.#retentionMode = state.mode;
+            this.#session = undefined;
+            this.#retainedUntil = undefined;
+            return;
+          }
+        } catch {
+          throw new Error("session_persistence_failed");
+        }
+        continue;
+      }
+
+      this.#retentionMode = state.mode;
       this.#session = {
-        subject: parsed.data.session.subject,
-        supabaseUrl: parsed.data.session.supabaseUrl,
-        publishableKey: parsed.data.session.publishableKey,
-        accessToken: parsed.data.session.accessToken,
-        refreshToken: parsed.data.session.refreshToken,
-        expiresAt: parsed.data.session.expiresAt,
+        subject: state.session.subject,
+        supabaseUrl: state.session.supabaseUrl,
+        publishableKey: state.session.publishableKey,
+        accessToken: state.session.accessToken,
+        refreshToken: state.session.refreshToken,
+        expiresAt: state.session.expiresAt,
       };
-      this.#retainedUntil = parsed.data.session.retainedUntil;
-    } catch {
-      this.#session = undefined;
-      this.#retainedUntil = undefined;
-      this.#persistence.clear();
+      this.#retainedUntil = state.session.retainedUntil;
+      return;
     }
+    throw new Error("session_changed");
+  }
+
+  #restoreIfDisconnected(): void {
+    if (this.#session === undefined) this.#restore();
+  }
+
+  #state(
+    session: StoredSession | undefined = this.#session,
+    retainedUntil: number | undefined = this.#retainedUntil,
+  ): PersistedState {
+    if (
+      this.#retentionMode === "seven-days" &&
+      retainedUntil !== undefined &&
+      session !== undefined
+    ) {
+      return {
+        version: 1,
+        mode: "seven-days",
+        session: { ...session, retainedUntil },
+      };
+    }
+    return { version: 1, mode: this.#retentionMode };
   }
 
   #persistState(): void {
-    if (this.#persistence === undefined) return;
-    if (
-      this.#retentionMode === "seven-days" &&
-      this.#retainedUntil !== undefined &&
-      this.#session !== undefined
-    ) {
-      this.#persistence.save({
-        version: 1,
-        mode: "seven-days",
-        session: { ...this.#session, retainedUntil: this.#retainedUntil },
-      });
-      return;
-    }
-    this.#persistence.save({ version: 1, mode: this.#retentionMode });
+    this.#persistence?.save(this.#state());
+  }
+
+  #adoptPersistedState(): StoredSession | undefined {
+    this.#sessionGeneration += 1;
+    this.#session = undefined;
+    this.#retainedUntil = undefined;
+    this.#restore();
+    return this.#session;
   }
 
   #expireSession(): void {
@@ -216,11 +283,24 @@ export class PersonalConnectionStore {
     ) {
       return false;
     }
+    if (this.#persistence !== undefined && this.#session !== undefined) {
+      const expected = this.#state();
+      const expired = this.#state(undefined, undefined);
+      if (!this.#persistence.compareAndSwap(expected, expired)) {
+        this.#adoptPersistedState();
+        return this.#expireRetentionIfNeeded();
+      }
+      this.#sessionGeneration += 1;
+      this.#session = undefined;
+      this.#retainedUntil = undefined;
+      return true;
+    }
     this.#expireSession();
     return true;
   }
 
   public status(): PersonalConnectionStatus {
+    this.#restoreIfDisconnected();
     this.#expireRetentionIfNeeded();
     return this.#session === undefined
       ? { connected: false }
@@ -228,6 +308,7 @@ export class PersonalConnectionStore {
   }
 
   public retention(): PersonalRetentionStatus {
+    this.#restoreIfDisconnected();
     this.#expireRetentionIfNeeded();
     return this.#retainedUntil === undefined
       ? { mode: this.#retentionMode }
@@ -238,24 +319,59 @@ export class PersonalConnectionStore {
     if (mode === "seven-days" && this.#persistence === undefined) {
       throw new Error("persistence_unavailable");
     }
-    const previousMode = this.#retentionMode;
-    const previousRetainedUntil = this.#retainedUntil;
-    this.#retentionMode = mode;
-    if (mode === "memory") {
+    if (this.#persistence === undefined) {
+      this.#retentionMode = mode;
       this.#retainedUntil = undefined;
-    } else {
-      this.#retainedUntil = this.#session === undefined
-        ? undefined
-        : this.#now() + SEVEN_DAY_RETENTION_MS;
+      return { mode: this.#retentionMode };
     }
-    try {
-      this.#persistState();
-    } catch (error) {
-      this.#retentionMode = previousMode;
-      this.#retainedUntil = previousRetainedUntil;
-      throw error;
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      let persisted: PersistedState | null;
+      try {
+        const loaded = this.#persistence.load();
+        persisted = loaded === null ? null : persistedStateSchema.parse(loaded);
+      } catch {
+        throw new Error("session_persistence_failed");
+      }
+
+      const latestSession = persisted?.mode === "seven-days"
+        ? persisted.session === undefined
+          ? undefined
+          : {
+              subject: persisted.session.subject,
+              supabaseUrl: persisted.session.supabaseUrl,
+              publishableKey: persisted.session.publishableKey,
+              accessToken: persisted.session.accessToken,
+              refreshToken: persisted.session.refreshToken,
+              expiresAt: persisted.session.expiresAt,
+            }
+        : this.#retentionMode === "memory"
+          ? this.#session
+          : undefined;
+      const retainedUntil = mode === "seven-days" && latestSession !== undefined
+        ? this.#now() + SEVEN_DAY_RETENTION_MS
+        : undefined;
+      const next: PersistedState = mode === "seven-days" && latestSession !== undefined && retainedUntil !== undefined
+        ? { version: 1, mode, session: { ...latestSession, retainedUntil } }
+        : { version: 1, mode };
+
+      let swapped: boolean;
+      try {
+        swapped = this.#persistence.compareAndSwap(persisted, next);
+      } catch {
+        throw new Error("session_persistence_failed");
+      }
+      if (!swapped) continue;
+
+      this.#sessionGeneration += 1;
+      this.#retentionMode = mode;
+      this.#session = latestSession;
+      this.#retainedUntil = retainedUntil;
+      return this.#retainedUntil === undefined
+        ? { mode: this.#retentionMode }
+        : { mode: this.#retentionMode, retainedUntil: this.#retainedUntil };
     }
-    return this.retention();
+    throw new Error("session_changed");
   }
 
   public disconnect(): void {
@@ -320,11 +436,35 @@ export class PersonalConnectionStore {
   }
 
   public async current(signal?: AbortSignal): Promise<PersonalConnection | null> {
+    this.#restoreIfDisconnected();
     const session = this.#session;
     if (session === undefined) return null;
     if (this.#expireRetentionIfNeeded()) return null;
     if (session.expiresAt > this.#now() + REFRESH_EARLY_MS) return session;
     return this.#refresh(session, signal);
+  }
+
+  #rejectRefresh(session: StoredSession, generation: number): StoredSession | undefined {
+    if (this.#sessionGeneration !== generation || this.#session !== session) {
+      throw new Error("session_changed");
+    }
+    if (this.#retentionMode === "seven-days" && this.#persistence !== undefined) {
+      const expected = this.#state(session, this.#retainedUntil);
+      const expired = this.#state(undefined, undefined);
+      let swapped: boolean;
+      try {
+        swapped = this.#persistence.compareAndSwap(expected, expired);
+      } catch {
+        throw new Error("session_persistence_failed");
+      }
+      if (!swapped) return this.#adoptPersistedState();
+      this.#sessionGeneration += 1;
+      this.#session = undefined;
+      this.#retainedUntil = undefined;
+      return undefined;
+    }
+    this.#expireSession();
+    return undefined;
   }
 
   async #refresh(session: StoredSession, signal?: AbortSignal): Promise<StoredSession> {
@@ -356,16 +496,14 @@ export class PersonalConnectionStore {
       }));
       if (!response.ok) {
         await discardBody(response);
-        if (this.#sessionGeneration === generation && this.#session === session) {
-          this.#expireSession();
-        }
+        const adopted = this.#rejectRefresh(session, generation);
+        if (adopted !== undefined) return adopted;
         throw new Error("session_expired");
       }
       const parsed = refreshSchema.safeParse(await readBoundedJson(response));
       if (!parsed.success || parsed.data.user.id !== session.subject) {
-        if (this.#sessionGeneration === generation && this.#session === session) {
-          this.#expireSession();
-        }
+        const adopted = this.#rejectRefresh(session, generation);
+        if (adopted !== undefined) return adopted;
         throw new Error("session_expired");
       }
       if (this.#sessionGeneration !== generation || this.#session !== session) {
@@ -379,13 +517,31 @@ export class PersonalConnectionStore {
         refreshToken: parsed.data.refresh_token,
         expiresAt: this.#now() + parsed.data.expires_in * 1_000,
       };
+      if (this.#retentionMode === "seven-days" && this.#persistence !== undefined) {
+        let swapped: boolean;
+        try {
+          swapped = this.#persistence.compareAndSwap(
+            this.#state(session, this.#retainedUntil),
+            this.#state(refreshed, this.#retainedUntil),
+          );
+        } catch {
+          throw new Error("session_persistence_failed");
+        }
+        if (!swapped) {
+          const adopted = this.#adoptPersistedState();
+          if (adopted !== undefined) return adopted;
+          throw new Error("session_changed");
+        }
+      }
       this.#sessionGeneration += 1;
       this.#session = refreshed;
-      try {
-        this.#persistState();
-      } catch {
-        this.#expireSession();
-        throw new Error("session_persistence_failed");
+      if (this.#retentionMode !== "seven-days") {
+        try {
+          this.#persistState();
+        } catch {
+          this.#expireSession();
+          throw new Error("session_persistence_failed");
+        }
       }
       return refreshed;
     })();

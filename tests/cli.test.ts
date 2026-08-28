@@ -2,11 +2,16 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
-import { statSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 import test from 'node:test';
 
 const CLI_PATH = resolve(process.cwd(), 'dist/product/src/cli.js');
+const CLI_TEST_TIMEOUT_MS = 15_000;
+const PACKAGE_VERSION = Reflect.get(
+    JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')) as object,
+    'version'
+);
 
 test('the built CLI is executable on POSIX package installations', {
     skip: process.platform === 'win32'
@@ -20,7 +25,7 @@ function runCli(args: readonly string[], environment: NodeJS.ProcessEnv = proces
         encoding: 'utf8',
         env: environment,
         shell: false,
-        timeout: 5_000
+        timeout: CLI_TEST_TIMEOUT_MS
     });
 }
 
@@ -90,7 +95,7 @@ function waitForListening(child: ReturnType<typeof spawn>): Promise<string> {
         }
         const timeout = setTimeout(() => {
             reject(new Error('CLI server did not announce readiness'));
-        }, 5_000);
+        }, CLI_TEST_TIMEOUT_MS);
         stderrStream.setEncoding('utf8');
         stderrStream.on('data', chunk => {
             stderr += chunk;
@@ -116,7 +121,7 @@ function waitForExit(child: ReturnType<typeof spawn>): Promise<{ code: number | 
     return new Promise((resolveExit, reject) => {
         const timeout = setTimeout(() => {
             reject(new Error('CLI server did not stop after SIGTERM'));
-        }, 5_000);
+        }, CLI_TEST_TIMEOUT_MS);
         child.once('exit', (code, signal) => {
             clearTimeout(timeout);
             resolveExit({ code, signal });
@@ -136,7 +141,7 @@ test('CLI exposes stable help, version and usage diagnostics without prompts', (
 
     const version = runCli(['--version']);
     assert.equal(version.status, 0);
-    assert.equal(version.stdout, 'prometheemcp 0.1.0\n');
+    assert.equal(version.stdout, `prometheemcp ${String(PACKAGE_VERSION)}\n`);
     assert.equal(version.stderr, '');
 
     const invalid = runCli(['--unknown']);

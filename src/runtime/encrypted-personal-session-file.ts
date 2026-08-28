@@ -5,17 +5,24 @@ import {
 } from "node:crypto";
 import {
   chmodSync,
+  closeSync,
   lstatSync,
   mkdirSync,
+  openSync,
   readFileSync,
   renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { dirname, isAbsolute } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 
 const AAD = Buffer.from("promethee-mcp-personal-session-v1", "utf8");
 const MAX_FILE_BYTES = 32 * 1024;
+const LOCK_WAIT_MS = 1_000;
+const STALE_LOCK_MS = 5_000;
+const LOCK_RETRY_MS = 10;
+const LOCK_SLEEP = new Int32Array(new SharedArrayBuffer(4));
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/u;
 
 type Envelope = Readonly<{
@@ -29,6 +36,7 @@ export interface PersonalSessionPersistence {
   load(): unknown | null;
   save(value: unknown): void;
   clear(): void;
+  compareAndSwap(expected: unknown | null, value: unknown): boolean;
 }
 
 export interface EncryptedFilePersonalSessionPersistenceOptions {
@@ -76,6 +84,7 @@ function parseEnvelope(value: unknown): Envelope {
 
 export class EncryptedFilePersonalSessionPersistence implements PersonalSessionPersistence {
   readonly #file: string;
+  readonly #lockFile: string;
   readonly #key: Buffer;
 
   public constructor(options: EncryptedFilePersonalSessionPersistenceOptions) {
@@ -86,10 +95,11 @@ export class EncryptedFilePersonalSessionPersistence implements PersonalSessionP
       throw new TypeError("Personal session encryption key must contain exactly 32 bytes");
     }
     this.#file = options.file;
+    this.#lockFile = `${options.file}.lock`;
     this.#key = Buffer.from(options.key);
   }
 
-  public load(): unknown | null {
+  #loadUnlocked(): unknown | null {
     let stat;
     try {
       stat = lstatSync(this.#file);
@@ -112,7 +122,7 @@ export class EncryptedFilePersonalSessionPersistence implements PersonalSessionP
     return JSON.parse(plaintext.toString("utf8")) as unknown;
   }
 
-  public save(value: unknown): void {
+  #saveUnlocked(value: unknown): void {
     const plaintext = Buffer.from(JSON.stringify(value), "utf8");
     if (plaintext.byteLength < 1 || plaintext.byteLength > MAX_FILE_BYTES) {
       throw new Error("invalid_session_payload");
@@ -132,7 +142,6 @@ export class EncryptedFilePersonalSessionPersistence implements PersonalSessionP
       throw new Error("invalid_session_payload");
     }
 
-    mkdirSync(dirname(this.#file), { recursive: true, mode: 0o700 });
     const temporary = `${this.#file}.${process.pid.toString(10)}.${randomBytes(8).toString("hex")}.tmp`;
     try {
       writeFileSync(temporary, serialized, { encoding: "utf8", flag: "wx", mode: 0o600 });
@@ -143,7 +152,53 @@ export class EncryptedFilePersonalSessionPersistence implements PersonalSessionP
     }
   }
 
+  #withLock<T>(operation: () => T): T {
+    mkdirSync(dirname(this.#file), { recursive: true, mode: 0o700 });
+    const deadline = Date.now() + LOCK_WAIT_MS;
+    const lockIdentity = `${process.pid.toString(10)}-${randomBytes(16).toString("hex")}`;
+    let descriptor: number | undefined;
+    while (descriptor === undefined) {
+      try {
+        descriptor = openSync(this.#lockFile, "wx", 0o600);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+        if (Date.now() >= deadline) throw new Error("session_persistence_busy");
+        Atomics.wait(LOCK_SLEEP, 0, 0, 10);
+      }
+    }
+    try {
+      writeFileSync(descriptor, lockIdentity, { encoding: "utf8" });
+      return operation();
+    } finally {
+      closeSync(descriptor);
+      try {
+        if (readFileSync(this.#lockFile, "utf8") === lockIdentity) {
+          rmSync(this.#lockFile, { force: true });
+        }
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
+    }
+  }
+
+  public load(): unknown | null {
+    return this.#loadUnlocked();
+  }
+
+  public save(value: unknown): void {
+    this.#withLock(() => this.#saveUnlocked(value));
+  }
+
   public clear(): void {
-    rmSync(this.#file, { force: true });
+    this.#withLock(() => rmSync(this.#file, { force: true }));
+  }
+
+  public compareAndSwap(expected: unknown | null, value: unknown): boolean {
+    return this.#withLock(() => {
+      const current = this.#loadUnlocked();
+      if (!isDeepStrictEqual(current, expected)) return false;
+      this.#saveUnlocked(value);
+      return true;
+    });
   }
 }

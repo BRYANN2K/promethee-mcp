@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import test from "node:test";
 
 import {
@@ -43,6 +44,97 @@ function connectionInput(expiresAt: number) {
   };
 }
 
+test("accepts GoTrue legacy twelve-character refresh tokens", async () => {
+  const now = 1_787_947_200_000;
+  const store = new PersonalConnectionStore({
+    fetch: identityFetch,
+    now: () => now,
+  });
+
+  const connected = await store.connect({
+    ...connectionInput(now + 3_600_000),
+    refreshToken: "A1b2C3d4E5f6",
+  });
+
+  assert.equal(connected.subject, SUBJECT);
+  assert.deepEqual(store.status(), { connected: true, expiresAt: now + 3_600_000 });
+});
+
+test("an already-running sibling reloads a newly persisted seven-day session", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "promethee-mcp-session-"));
+  const file = join(directory, "session.enc");
+  const key = new Uint8Array(32).fill(40);
+  const now = 1_787_947_200_000;
+
+  try {
+    const first = new PersonalConnectionStore({
+      fetch: identityFetch,
+      now: () => now,
+      persistence: new EncryptedFilePersonalSessionPersistence({ file, key }),
+      defaultRetention: "seven-days",
+    });
+    const sibling = new PersonalConnectionStore({
+      fetch: identityFetch,
+      now: () => now,
+      persistence: new EncryptedFilePersonalSessionPersistence({ file, key }),
+      defaultRetention: "seven-days",
+    });
+    assert.deepEqual(sibling.status(), { connected: false });
+
+    await first.connect(connectionInput(now + 3_600_000));
+
+    assert.deepEqual(sibling.status(), { connected: true, expiresAt: now + 3_600_000 });
+    assert.equal((await sibling.current())?.subject, SUBJECT);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("a stale sibling retention change preserves the newest persisted session", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "promethee-mcp-session-"));
+  const file = join(directory, "session.enc");
+  const key = new Uint8Array(32).fill(61);
+  const now = 1_787_947_200_000;
+  const newestSubject = "62a59316-0ae2-4bf7-bc97-881e6a57fe10";
+  const latestIdentityFetch = (request: Request) => Promise.resolve(Response.json({
+    id: request.headers.get("authorization") === "Bearer synthetic.second.access-token"
+      ? newestSubject
+      : SUBJECT,
+  }));
+  const persistence = () => new EncryptedFilePersonalSessionPersistence({ file, key });
+  try {
+    const writer = new PersonalConnectionStore({
+      fetch: latestIdentityFetch,
+      now: () => now,
+      persistence: persistence(),
+      defaultRetention: "seven-days",
+    });
+    await writer.connect(connectionInput(now + 3_600_000));
+    const staleSibling = new PersonalConnectionStore({
+      fetch: latestIdentityFetch,
+      now: () => now,
+      persistence: persistence(),
+      defaultRetention: "seven-days",
+    });
+    await writer.connect({
+      ...connectionInput(now + 3_600_000),
+      accessToken: "synthetic.second.access-token",
+      refreshToken: "synthetic-second-refresh-token-value",
+    });
+    staleSibling.setRetention("seven-days");
+
+    const fresh = new PersonalConnectionStore({
+      fetch: latestIdentityFetch,
+      now: () => now,
+      persistence: persistence(),
+      defaultRetention: "seven-days",
+    });
+    assert.equal((await fresh.current())?.subject, newestSubject);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("seven-day retention restores one encrypted personal session after restart", async () => {
   const directory = mkdtempSync(join(tmpdir(), "promethee-mcp-session-"));
   const file = join(directory, "session.enc");
@@ -79,6 +171,61 @@ test("seven-day retention restores one encrypted personal session after restart"
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test("restore cannot clear a newer session that wins an expiration race", () => {
+  const now = 1_787_947_200_000;
+  const expired: unknown = {
+    version: 1,
+    mode: "seven-days",
+    session: {
+      ...connectionInput(now + 3_600_000),
+      subject: SUBJECT,
+      retainedUntil: now - 1,
+    },
+  };
+  const newestSubject = "62a59316-0ae2-4bf7-bc97-881e6a57fe10";
+  const newer: unknown = {
+    version: 1,
+    mode: "seven-days",
+    session: {
+      ...connectionInput(now + 3_600_000),
+      subject: newestSubject,
+      accessToken: "synthetic.second.access-token",
+      refreshToken: "synthetic-second-refresh-token-value",
+      retainedUntil: now + SEVEN_DAY_RETENTION_MS,
+    },
+  };
+  let state: unknown | null = expired;
+  let firstLoad = true;
+  const persistence = {
+    load: () => {
+      if (!firstLoad) return state;
+      firstLoad = false;
+      const returned = state;
+      state = newer;
+      return returned;
+    },
+    save: (value: unknown) => {
+      state = value;
+    },
+    clear: () => {
+      state = null;
+    },
+    compareAndSwap: (expected: unknown | null, value: unknown) => {
+      if (!isDeepStrictEqual(state, expected)) return false;
+      state = value;
+      return true;
+    },
+  };
+
+  const restored = new PersonalConnectionStore({
+    now: () => now,
+    persistence,
+    defaultRetention: "seven-days",
+  });
+  assert.equal(Reflect.get(Reflect.get(state as object, "session") as object, "subject"), newestSubject);
+  assert.deepEqual(restored.status(), { connected: true, expiresAt: now + 3_600_000 });
 });
 
 test("expired retention is removed and no-renewal clears the persisted session", async () => {
@@ -137,6 +284,73 @@ test("expired retention is removed and no-renewal clears the persisted session",
   }
 });
 
+test("a late sibling refresh rejection cannot erase a newer persisted session", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "promethee-mcp-session-"));
+  const file = join(directory, "session.enc");
+  const key = new Uint8Array(32).fill(43);
+  const firstRefreshStarted = deferred<void>();
+  const secondRefreshStarted = deferred<void>();
+  const firstRefreshResponse = deferred<Response>();
+  const secondRefreshResponse = deferred<Response>();
+  let now = 1_787_947_200_000;
+
+  const refreshingFetch = (
+    started: ReturnType<typeof deferred<void>>,
+    response: ReturnType<typeof deferred<Response>>,
+  ) => async (request: Request): Promise<Response> => {
+    const path = new URL(request.url).pathname;
+    if (path === "/auth/v1/user") return Response.json({ id: SUBJECT });
+    if (path === "/auth/v1/token") {
+      started.resolve();
+      return response.promise;
+    }
+    throw new Error(`Unexpected request: ${request.method} ${path}`);
+  };
+
+  try {
+    const first = new PersonalConnectionStore({
+      fetch: refreshingFetch(firstRefreshStarted, firstRefreshResponse),
+      now: () => now,
+      persistence: new EncryptedFilePersonalSessionPersistence({ file, key }),
+      defaultRetention: "seven-days",
+    });
+    await first.connect(connectionInput(now + 120_000));
+    const sibling = new PersonalConnectionStore({
+      fetch: refreshingFetch(secondRefreshStarted, secondRefreshResponse),
+      now: () => now,
+      persistence: new EncryptedFilePersonalSessionPersistence({ file, key }),
+      defaultRetention: "seven-days",
+    });
+    now += 70_000;
+
+    const firstCurrent = first.current();
+    const siblingCurrent = sibling.current();
+    await Promise.all([firstRefreshStarted.promise, secondRefreshStarted.promise]);
+
+    firstRefreshResponse.resolve(Response.json({
+      access_token: "synthetic.rotated.access-token",
+      refresh_token: "synthetic-rotated-refresh-token",
+      expires_in: 3_600,
+      user: { id: SUBJECT },
+    }));
+    assert.equal((await firstCurrent)?.accessToken, "synthetic.rotated.access-token");
+
+    secondRefreshResponse.resolve(new Response(null, { status: 401 }));
+    assert.equal((await siblingCurrent)?.accessToken, "synthetic.rotated.access-token");
+
+    const restored = new PersonalConnectionStore({
+      fetch: identityFetch,
+      now: () => now,
+      persistence: new EncryptedFilePersonalSessionPersistence({ file, key }),
+      defaultRetention: "seven-days",
+    });
+    assert.deepEqual(restored.status(), { connected: true, expiresAt: now + 3_600_000 });
+    assert.equal((await restored.current())?.accessToken, "synthetic.rotated.access-token");
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("a persistence failure leaves the previous retention choice unchanged", async () => {
   let persisted: unknown = null;
   let fail = false;
@@ -148,6 +362,12 @@ test("a persistence failure leaves the previous retention choice unchanged", asy
     },
     clear: () => {
       persisted = null;
+    },
+    compareAndSwap: (expected: unknown | null, value: unknown) => {
+      if (!isDeepStrictEqual(persisted, expected)) return false;
+      if (fail) throw new Error("synthetic_write_failure");
+      persisted = value;
+      return true;
     },
   };
   const now = 1_787_947_200_000;
@@ -161,7 +381,7 @@ test("a persistence failure leaves the previous retention choice unchanged", asy
   const previous = store.retention();
 
   fail = true;
-  assert.throws(() => store.setRetention("memory"), /synthetic_write_failure/u);
+  assert.throws(() => store.setRetention("memory"), /session_persistence_failed/u);
   assert.deepEqual(store.retention(), previous);
   assert.deepEqual(store.status(), { connected: true, expiresAt: now + 3_600_000 });
 });

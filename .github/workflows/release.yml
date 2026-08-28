@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Install Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            web/package-lock.json
+
+      - name: Verify tag matches package version
+        run: |
+          VERSION="$(node --input-type=module -e "import manifest from './package.json' with { type: 'json' }; process.stdout.write(manifest.version)")"
+          if [ "v${VERSION}" != "${GITHUB_REF_NAME}" ]; then
+            printf 'Tag %s does not match package version %s.\n' "${GITHUB_REF_NAME}" "${VERSION}" >&2
+            exit 1
+          fi
+
+      - name: Install backend dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Validate backend
+        run: npm run check
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci --ignore-scripts
+
+      - name: Validate web application
+        working-directory: web
+        run: npm run check
+
+      - name: Smoke-test the installable npx package
+        run: npm run test:package
+
+      - name: Pack release asset
+        run: |
+          mkdir release
+          npm pack --ignore-scripts --pack-destination release
+          TARBALL="release/promethee-mcp-${GITHUB_REF_NAME#v}.tgz"
+          test -f "$TARBALL"
+          sha256sum "$TARBALL" > "$TARBALL.sha256"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" release/promethee-mcp-*.tgz release/promethee-mcp-*.sha256 --verify-tag --generate-notes --title "${GITHUB_REF_NAME}"

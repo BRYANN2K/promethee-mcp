@@ -4,13 +4,13 @@ Promethee MCP lets an AI assistant work with your Promethee tasks and projects w
 
 The local MCP starts through `npx`, hosts its own passwordless sign-in page on `127.0.0.1`, and keeps the Promethee email code inside the browser. It never extracts a desktop session and never includes a service-role key.
 
-## Install v0.1.0 from GitHub
+## Install v0.1.1 from GitHub
 
 You can let your LLM configure the MCP. Send it this instruction:
 
 ```text
 Install Promethee MCP as a user-scoped stdio server. Use npx with the reviewed GitHub Release archive
-https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz and the prometheemcp --stdio executable.
+https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.1/promethee-mcp-0.1.1.tgz and the prometheemcp --stdio executable.
 Reconnect the MCP, call promethee_connection_status, and give me its login URL.
 Never ask me to paste the email code or tokens into the conversation.
 ```
@@ -18,7 +18,7 @@ Never ask me to paste the email code or tokens into the conversation.
 Or run the onboarding yourself:
 
 ```bash
-npx -y --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz prometheemcp
+npx -y --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.1/promethee-mcp-0.1.1.tgz -- prometheemcp
 ```
 
 The terminal lets you configure Codex, Claude Code, or copy a generic MCP JSON block. It prints the exact command first and changes a client configuration only after confirmation.
@@ -28,8 +28,8 @@ The terminal lets you configure Codex, Claude Code, or copy a generic MCP JSON b
 ```bash
 codex mcp add promethee -- \
   npx -y \
-  --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz \
-  prometheemcp --stdio
+  --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.1/promethee-mcp-0.1.1.tgz \
+  -- prometheemcp --stdio
 ```
 
 ### Claude Code
@@ -37,8 +37,8 @@ codex mcp add promethee -- \
 ```bash
 claude mcp add --scope user promethee -- \
   npx -y \
-  --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz \
-  prometheemcp --stdio
+  --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.1/promethee-mcp-0.1.1.tgz \
+  -- prometheemcp --stdio
 ```
 
 ### Generic MCP configuration
@@ -50,7 +50,8 @@ claude mcp add --scope user promethee -- \
       "command": "npx",
       "args": [
         "-y",
-        "--package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz",
+        "--package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.1/promethee-mcp-0.1.1.tgz",
+        "--",
         "prometheemcp",
         "--stdio"
       ]
@@ -61,14 +62,14 @@ claude mcp add --scope user promethee -- \
 
 After the client starts the server, ask it to connect Promethee. The MCP calls `promethee_connection_status` and returns a local URL such as `http://127.0.0.1:3210/login`. Choose `7 days` or `Never`, enter your email, and verify the six-digit code in that browser page. The running MCP detects the connection immediately; no reinstall is required.
 
-The commands above pin the reviewed `v0.1.0` release archive. This avoids rebuilding a mutable Git checkout during installation.
+The commands above pin the reviewed `v0.1.1` release archive. This avoids rebuilding a mutable Git checkout during installation.
 
 ### Hermes / VPS handoff
 
 Give Hermes this instruction on the VPS:
 
 ```text
-Install the public GitHub release BRYANN2K/promethee-mcp at the exact v0.1.0 tag.
+Install the public GitHub release BRYANN2K/promethee-mcp at the exact v0.1.1 tag.
 Read docs/operations/self-hosting.md before making changes. Configure the checked-in
 Docker Compose deployment with operator-owned secrets outside Git, validate it with
 docker compose config, build it, start it, and report the health and MCP discovery
@@ -123,7 +124,7 @@ The publisher-integrated Supabase mode still has these gates:
 - production RLS, OAuth client registration, MCP audience/scopes, idempotency, quotas, refresh/revocation, and staging compatibility remain unverified;
 - sessions, time reports, current status, update/delete, and timer control are outside this version;
 - executed container builds, TLS/Caddy validation, VPS rollout, key-rotation, and rollback evidence for the checked-in deployment candidate;
-- the public `v0.1.0` GitHub source release is the reviewed distribution point; no npm package, container image, or hosted deployment is published.
+- the public `v0.1.1` GitHub source release is the reviewed distribution point; no npm package, container image, or hosted deployment is published.
 
 The publisher mode fails closed when an RPC or permission is absent. Personal mode deliberately uses only fixed direct operations on `tasks` and `task_projects`; it never exposes arbitrary PostgREST or generic RPC access.
 
