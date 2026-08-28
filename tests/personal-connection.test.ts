@@ -351,6 +351,73 @@ test("a late sibling refresh rejection cannot erase a newer persisted session", 
   }
 });
 
+test("a stale memory refresh cannot overwrite a newer persisted session", async () => {
+  for (const outcome of ["success", "rejected"] as const) {
+    const directory = mkdtempSync(join(tmpdir(), "promethee-mcp-session-"));
+    const file = join(directory, "session.enc");
+    const key = new Uint8Array(32).fill(outcome === "success" ? 71 : 72);
+    let now = 1_787_947_200_000;
+    const persistence = () => new EncryptedFilePersonalSessionPersistence({ file, key });
+    const memoryFetch = (request: Request): Promise<Response> => {
+      const path = new URL(request.url).pathname;
+      if (path === "/auth/v1/user") return Promise.resolve(Response.json({ id: SUBJECT }));
+      if (path === "/auth/v1/token") {
+        return Promise.resolve(outcome === "success"
+          ? Response.json({
+              access_token: "synthetic.refreshed.access-token",
+              refresh_token: "synthetic-refreshed-token-value",
+              expires_in: 3_600,
+              user: { id: SUBJECT },
+            })
+          : new Response(null, { status: 401 }));
+      }
+      throw new Error(`Unexpected path: ${path}`);
+    };
+    try {
+      const staleMemory = new PersonalConnectionStore({
+        fetch: memoryFetch,
+        now: () => now,
+        persistence: persistence(),
+        defaultRetention: "memory",
+      });
+      await staleMemory.connect(connectionInput(now + 120_000));
+
+      const newest = new PersonalConnectionStore({
+        fetch: (request) => Promise.resolve(Response.json({
+          id: request.headers.get("authorization") === `Bearer ${SECOND_ACCESS_TOKEN}`
+            ? SECOND_SUBJECT
+            : SUBJECT,
+        })),
+        now: () => now,
+        persistence: persistence(),
+        defaultRetention: "seven-days",
+      });
+      newest.setRetention("seven-days");
+      await newest.connect({
+        ...connectionInput(now + 3_600_000),
+        accessToken: SECOND_ACCESS_TOKEN,
+        refreshToken: SECOND_REFRESH_TOKEN,
+      });
+      now += 90_000;
+
+      if (outcome === "success") {
+        assert.equal((await staleMemory.current())?.subject, SUBJECT);
+      } else {
+        await assert.rejects(() => staleMemory.current(), /session_expired/u);
+      }
+
+      const restored = new PersonalConnectionStore({
+        now: () => now,
+        persistence: persistence(),
+        defaultRetention: "seven-days",
+      });
+      assert.equal((await restored.current())?.subject, SECOND_SUBJECT);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  }
+});
+
 test("a persistence failure leaves the previous retention choice unchanged", async () => {
   let persisted: unknown = null;
   let fail = false;

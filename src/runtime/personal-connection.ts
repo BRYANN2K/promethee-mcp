@@ -463,7 +463,9 @@ export class PersonalConnectionStore {
       this.#retainedUntil = undefined;
       return undefined;
     }
-    this.#expireSession();
+    this.#sessionGeneration += 1;
+    this.#session = undefined;
+    this.#retainedUntil = undefined;
     return undefined;
   }
 
@@ -535,14 +537,6 @@ export class PersonalConnectionStore {
       }
       this.#sessionGeneration += 1;
       this.#session = refreshed;
-      if (this.#retentionMode !== "seven-days") {
-        try {
-          this.#persistState();
-        } catch {
-          this.#expireSession();
-          throw new Error("session_persistence_failed");
-        }
-      }
       return refreshed;
     })();
     const operation: RefreshOperation = { generation, session, promise };
