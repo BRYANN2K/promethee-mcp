@@ -13,7 +13,7 @@ A user or AI assistant can configure Promethee MCP from a reviewed GitHub Releas
 ### Package launch
 
 - FR-301: The installation reference is a bounded HTTPS GitHub Release `.tgz` package URL.
-- FR-302: MCP client configurations launch `npx -y --package=<package-spec> prometheeemcp --stdio` as an executable plus argument array, never through a shell command string.
+- FR-302: MCP client configurations launch `npx -y --package=<package-spec> prometheemcp --stdio` as an executable plus argument array, never through a shell command string.
 - FR-303: Documentation recommends a reviewed tag or commit SHA for stable installation.
 - FR-304: The package contains the compiled CLI and compiled login shell required by the stdio process.
 
@@ -56,13 +56,13 @@ A user or AI assistant can configure Promethee MCP from a reviewed GitHub Releas
 ### Codex
 
 ```bash
-codex mcp add promethee -- npx -y --package=<git-ref> prometheeemcp --stdio
+codex mcp add promethee -- npx -y --package=<git-ref> prometheemcp --stdio
 ```
 
 ### Claude Code
 
 ```bash
-claude mcp add --scope user promethee -- npx -y --package=<git-ref> prometheeemcp --stdio
+claude mcp add --scope user promethee -- npx -y --package=<git-ref> prometheemcp --stdio
 ```
 
 ### Generic

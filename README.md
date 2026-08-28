@@ -10,7 +10,7 @@ You can let your LLM configure the MCP. Send it this instruction:
 
 ```text
 Install Promethee MCP as a user-scoped stdio server. Use npx with the reviewed GitHub Release archive
-https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz and the prometheeemcp --stdio executable.
+https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz and the prometheemcp --stdio executable.
 Reconnect the MCP, call promethee_connection_status, and give me its login URL.
 Never ask me to paste the email code or tokens into the conversation.
 ```
@@ -18,7 +18,7 @@ Never ask me to paste the email code or tokens into the conversation.
 Or run the onboarding yourself:
 
 ```bash
-npx -y --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz prometheeemcp
+npx -y --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz prometheemcp
 ```
 
 The terminal lets you configure Codex, Claude Code, or copy a generic MCP JSON block. It prints the exact command first and changes a client configuration only after confirmation.
@@ -29,7 +29,7 @@ The terminal lets you configure Codex, Claude Code, or copy a generic MCP JSON b
 codex mcp add promethee -- \
   npx -y \
   --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz \
-  prometheeemcp --stdio
+  prometheemcp --stdio
 ```
 
 ### Claude Code
@@ -38,7 +38,7 @@ codex mcp add promethee -- \
 claude mcp add --scope user promethee -- \
   npx -y \
   --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz \
-  prometheeemcp --stdio
+  prometheemcp --stdio
 ```
 
 ### Generic MCP configuration

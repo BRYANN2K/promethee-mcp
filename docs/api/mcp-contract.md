@@ -8,7 +8,7 @@
 
 ### Local GitHub Release+npx composition
 
-- Transport: MCP stdio launched as `npx -y --package=<reviewed-git-ref> prometheeemcp --stdio`.
+- Transport: MCP stdio launched as `npx -y --package=<reviewed-git-ref> prometheemcp --stdio`.
 - Browser bridge: an exact-origin login surface on `http://127.0.0.1:<bounded-port>/login` owned by the same process.
 - Before browser pairing, only `promethee_connection_status` succeeds; the five account tools return `authentication_required` without an upstream data call.
 - After pairing, each account tool resolves the current user-scoped application at call time, so the MCP process does not restart.

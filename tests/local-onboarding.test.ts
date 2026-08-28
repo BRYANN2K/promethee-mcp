@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
@@ -82,6 +82,19 @@ test('client install plans use npx as the launcher and never put credentials in 
     () => createClientInstallPlan('codex', 'https://example.test/promethee-mcp.tgz'),
     /GitHub Release package URL is invalid/u,
   );
+});
+
+test('documented npx commands use an executable declared by the package', () => {
+  const packageManifest = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')) as {
+    bin?: Record<string, string>;
+  };
+  const readme = readFileSync(resolve(process.cwd(), 'README.md'), 'utf8');
+  const documentedExecutables = readme.match(/\bpromethe+mcp\b/gu) ?? [];
+
+  assert.ok(documentedExecutables.length > 0);
+  for (const executable of documentedExecutables) {
+    assert.ok(packageManifest.bin?.[executable], `${executable} is not declared in package.json#bin`);
+  }
 });
 
 test('the static login route is bounded to approved files and sends browser security headers', async () => {

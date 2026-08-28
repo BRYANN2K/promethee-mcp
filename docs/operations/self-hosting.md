@@ -48,7 +48,7 @@ Synthetic mode accepts no Promethee/Supabase origin, key, service-role credentia
 For a local MCP client, use the reviewed release archive:
 
 ```bash
-npx -y --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz prometheeemcp
+npx -y --package=https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.0/promethee-mcp-0.1.0.tgz prometheemcp
 ```
 
 On a human terminal, this prints a Codex/Claude Code/generic configuration choice and requires confirmation before running a client-specific add command. When an MCP client launches the same executable with piped stdio, zero arguments start JSON-RPC directly; `prometheemcp --stdio` is the explicit form.

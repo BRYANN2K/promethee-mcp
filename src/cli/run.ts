@@ -27,7 +27,7 @@ export const CLI_VERSION = '0.1.0';
 export const SYNTHETIC_HOST = '127.0.0.1';
 export const DEFAULT_SYNTHETIC_PORT = 3210;
 
-const HELP = `Usage: prometheeemcp [command] [options]
+const HELP = `Usage: prometheemcp [command] [options]
 
 Connect an MCP client to Promethee tasks and projects.
 
@@ -388,7 +388,7 @@ export async function runCli(
             error instanceof PersonalCliConfigurationError ||
             error instanceof LocalOnboardingConfigurationError
         ) {
-            io.stderr.write(`${error.message}\nRun prometheeemcp --help for usage.\n`);
+            io.stderr.write(`${error.message}\nRun prometheemcp --help for usage.\n`);
             return 2;
         }
         if (isTemporaryBindFailure(error)) {

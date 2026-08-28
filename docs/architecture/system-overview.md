@@ -29,7 +29,7 @@ The remote publisher-OAuth flow is:
 
 The implemented local personal flow is:
 
-1. A user or AI assistant configures the MCP client to launch `npx -y --package=<reviewed-git-ref> prometheeemcp --stdio`.
+1. A user or AI assistant configures the MCP client to launch `npx -y --package=<reviewed-git-ref> prometheemcp --stdio`.
 2. The process starts MCP JSON-RPC on stdio and a same-process login surface on `127.0.0.1`.
 3. `promethee_connection_status` returns the loopback URL without identity, code, or token material.
 4. The user completes the passwordless email-code flow in the browser and selects seven-day or `Never` retention.

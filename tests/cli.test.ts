@@ -131,7 +131,7 @@ function waitForExit(child: ReturnType<typeof spawn>): Promise<{ code: number | 
 test('CLI exposes stable help, version and usage diagnostics without prompts', () => {
     const help = runCli(['--help']);
     assert.equal(help.status, 0);
-    assert.match(help.stdout, /^Usage: prometheeemcp/u);
+    assert.match(help.stdout, /^Usage: prometheemcp/u);
     assert.equal(help.stderr, '');
 
     const version = runCli(['--version']);
@@ -142,7 +142,7 @@ test('CLI exposes stable help, version and usage diagnostics without prompts', (
     const invalid = runCli(['--unknown']);
     assert.equal(invalid.status, 2);
     assert.equal(invalid.stdout, '');
-    assert.equal(invalid.stderr, 'Unknown option.\nRun prometheeemcp --help for usage.\n');
+    assert.equal(invalid.stderr, 'Unknown option.\nRun prometheemcp --help for usage.\n');
 });
 
 test('doctor emits stable JSON and applies flag over environment over default precedence', () => {
@@ -200,7 +200,7 @@ test('doctor validates Supabase mode without making a network request or exposin
     assert.equal(invalid.stdout, '');
     assert.equal(
         invalid.stderr,
-        'PROMETHEE_MCP_CURSOR_KEY_BASE64URL is required in supabase mode.\nRun prometheeemcp --help for usage.\n'
+        'PROMETHEE_MCP_CURSOR_KEY_BASE64URL is required in supabase mode.\nRun prometheemcp --help for usage.\n'
     );
 });
 
@@ -248,7 +248,7 @@ test('doctor validates production personal mode without exposing deployment secr
     assert.equal(invalid.status, 2);
     assert.equal(
         invalid.stderr,
-        'PROMETHEE_MCP_SESSION_KEY_BASE64URL is required in production personal mode.\nRun prometheeemcp --help for usage.\n'
+        'PROMETHEE_MCP_SESSION_KEY_BASE64URL is required in production personal mode.\nRun prometheemcp --help for usage.\n'
     );
 });
 
