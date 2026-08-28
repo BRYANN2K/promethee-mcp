@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
+import { pathToFileURL } from 'node:url';
 
 const root = new URL('../', import.meta.url);
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
@@ -118,9 +119,10 @@ try {
   const packed = JSON.parse(run('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', workspace]));
   assert.equal(packed.length, 1);
   const tarball = join(workspace, packed[0].filename);
-  const version = run('npx', ['-y', `--package=${tarball}`, '--', 'prometheemcp', '--version']);
+  const packageSpec = pathToFileURL(tarball).href;
+  const version = run('npx', ['-y', `--package=${packageSpec}`, '--', 'prometheemcp', '--version']);
   assert.equal(version, `prometheemcp ${packageJson.version}`);
-  await smokeStdio(tarball);
+  await smokeStdio(packageSpec);
   process.stdout.write(`Packed npx smoke passed for promethee-mcp@${packageJson.version}.\n`);
 } finally {
   rmSync(workspace, { recursive: true, force: true });

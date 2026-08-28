@@ -18,7 +18,7 @@ export interface InteractiveOnboardingOptions {
 
 const PACKAGE_SPEC_PATTERN = /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/releases\/download\/[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.tgz$/u;
 
-export const DEFAULT_PACKAGE_SPEC = 'https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.1/promethee-mcp-0.1.1.tgz';
+export const DEFAULT_PACKAGE_SPEC = 'https://github.com/BRYANN2K/promethee-mcp/releases/download/v0.1.2/promethee-mcp-0.1.2.tgz';
 
 function validatePackageSpec(value: string): string {
     if (value.length > 512 || !PACKAGE_SPEC_PATTERN.test(value)) {
