@@ -1,9 +1,12 @@
 name: Release
 
+# Paused: GitHub Actions is blocked by billing. Woodpecker runs this as
+# .woodpecker/release.yaml. Restore the triggers below to switch back.
+#   push:
+#     tags:
+#       - 'v*'
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write

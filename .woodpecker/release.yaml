@@ -1,0 +1,45 @@
+# GitHub Releases are not Actions billing: the release is created through the
+# REST API with a fine-grained token (contents:write on this repo only).
+when:
+  - event: tag
+    ref: refs/tags/v*
+
+variables:
+  - &node docker.io/library/node:22.14.0-bookworm-slim@sha256:1c18d9ab3af4585870b92e4dbc5cac5a0dc77dd13df1a5905cea89fc720eb05b
+
+steps:
+  - name: validate-and-pack
+    image: *node
+    backend_options:
+      kubernetes:
+        resources:
+          requests: {cpu: 250m, memory: 512Mi}
+          limits: {cpu: "2", memory: 2Gi}
+    commands:
+      - VERSION="$(node -p 'require("./package.json").version')"
+      - test "v$VERSION" = "$CI_COMMIT_TAG" || { echo "Tag $CI_COMMIT_TAG does not match package version $VERSION" >&2; exit 1; }
+      - npm ci --ignore-scripts
+      - npm run check
+      - (cd web && npm ci --ignore-scripts && npm run check)
+      - npm run test:package
+      - mkdir -p release
+      - npm pack --ignore-scripts --pack-destination release
+      - TARBALL="promethee-mcp-$VERSION.tgz" && test -f "release/$TARBALL" && (cd release && sha256sum "$TARBALL" > "$TARBALL.sha256")
+      - test -f "docs/releases/$CI_COMMIT_TAG.md"
+
+  - name: github-release
+    image: *node
+    environment:
+      GH_TOKEN:
+        from_secret: github_release_token
+      GH_URL: https://github.com/cli/cli/releases/download/v2.103.2/gh_2.103.2_linux_amd64.tar.gz
+      GH_SHA256: 62ccf747115ddc61237efffdde66a3c8f70ba249433dc64f70801089b59c59c8
+    commands:
+      - >-
+        node -e 'const c=require("crypto"),fs=require("fs");fetch(process.env.GH_URL).then(r=>r.arrayBuffer()).then(b=>{b=Buffer.from(b);
+        if(c.createHash("sha256").update(b).digest("hex")!==process.env.GH_SHA256){console.error("checksum mismatch");process.exit(1)}
+        fs.writeFileSync("/tmp/gh.tgz",b)})'
+      - tar -xzf /tmp/gh.tgz -C /tmp --strip-components 2 gh_2.103.2_linux_amd64/bin/gh
+      - >-
+        /tmp/gh release create "$CI_COMMIT_TAG" release/promethee-mcp-*.tgz release/promethee-mcp-*.sha256
+        --repo "$CI_REPO" --verify-tag --notes-file "docs/releases/$CI_COMMIT_TAG.md" --title "$CI_COMMIT_TAG"
