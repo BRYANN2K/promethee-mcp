@@ -1,0 +1,71 @@
+when:
+  - event: pull_request
+  - event: push
+    branch: main
+  - event: manual
+
+variables:
+  - &node docker.io/library/node:22.14.0-bookworm-slim@sha256:1c18d9ab3af4585870b92e4dbc5cac5a0dc77dd13df1a5905cea89fc720eb05b
+  - &kaniko docker.io/martizih/kaniko:v1.28.6-debug@sha256:7ab44d0131c3051b6dea128067e258c7afb5c4815082a93b9cf6c624f2140bf0
+  - &busybox_entrypoint ["/busybox/sh", "-c", "echo $CI_SCRIPT | /busybox/base64 -d | /busybox/sh -e"]
+  - &resources
+    kubernetes:
+      resources:
+        requests: {cpu: 250m, memory: 512Mi}
+        limits: {cpu: "2", memory: 2Gi}
+  - &build_resources
+    kubernetes:
+      resources:
+        requests: {cpu: 500m, memory: 1Gi}
+        limits: {cpu: "2", memory: 3Gi}
+
+steps:
+  - name: validate
+    image: *node
+    backend_options: *resources
+    commands:
+      - npm ci --ignore-scripts
+      - npm run check
+      - npm audit --omit=dev
+      - (cd web && npm ci --ignore-scripts && npm run check)
+      - npm run test:package
+      - (cd web && npm audit --omit=dev)
+
+  - name: compose-config
+    image: *node
+    environment:
+      COMPOSE_URL: https://github.com/docker/compose/releases/download/v5.6.1/docker-compose-linux-x86_64
+      COMPOSE_SHA256: 47737f4236e6d3ccea7291995203f8f018058783b4c3a9469119811a0b5db8c0
+      ACME_EMAIL: operator@example.test
+      MCP_DOMAIN: mcp.example.test
+      PROMETHEE_MCP_ADMIN_PASSWORD_HASH: test_hash
+      PROMETHEE_MCP_ADMIN_USER: operator
+      PROMETHEE_MCP_CURSOR_KEY_BASE64URL: BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc
+      PROMETHEE_MCP_EDGE_TOKEN: EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+      PROMETHEE_MCP_PERSONAL_ACCESS_TOKEN: MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+      PROMETHEE_MCP_SESSION_KEY_BASE64URL: CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+      PROMETHEE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_synthetic_ci_value
+    commands:
+      - >-
+        node -e 'const c=require("crypto"),fs=require("fs");fetch(process.env.COMPOSE_URL).then(r=>r.arrayBuffer()).then(b=>{b=Buffer.from(b);
+        if(c.createHash("sha256").update(b).digest("hex")!==process.env.COMPOSE_SHA256){console.error("checksum mismatch");process.exit(1)}
+        fs.writeFileSync("/usr/local/bin/docker-compose",b,{mode:0o755})})'
+      - docker-compose config --quiet
+
+  - name: service-image
+    image: *kaniko
+    entrypoint: *busybox_entrypoint
+    backend_options: *build_resources
+    commands:
+      - /kaniko/executor --context "dir://$CI_WORKSPACE" --dockerfile Dockerfile --no-push --cleanup
+
+  - name: edge-image
+    image: *kaniko
+    entrypoint: *busybox_entrypoint
+    backend_options: *build_resources
+    commands:
+      - >-
+        /kaniko/executor --context "dir://$CI_WORKSPACE" --dockerfile deploy/Dockerfile --no-push --cleanup
+        --build-arg VITE_SUPABASE_URL=https://auth.promethee.io
+        --build-arg VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_synthetic_ci_value
+        --build-arg VITE_MCP_BASE_URL=https://mcp.example.test
